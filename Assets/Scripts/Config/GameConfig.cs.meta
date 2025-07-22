@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: daf975b219dc20248adbe224cd2b5bb6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - balloonSprite: {instanceID: 0}
+  - duckSprite: {instanceID: 0}
+  - rocketHorizontalSprite: {instanceID: 0}
+  - rocketVerticalSprite: {instanceID: 0}
+  - backgroundSprite: {instanceID: 0}
+  - topUISprite: {instanceID: 0}
+  - bottomUISprite: {instanceID: 0}
+  - bordersSprite: {instanceID: 0}
+  - cubeExplodeSound: {fileID: 8300000, guid: 3db27ef4e4b9de6418d23e412507aef3, type: 3}
+  - cubeCollectSound: {fileID: 8300000, guid: cf696fc845995e94394e8b4c3a404405, type: 3}
+  - balloonSound: {fileID: 8300000, guid: 9602615919e84cc42840ff8c38c4f188, type: 3}
+  - duckSound: {fileID: 8300000, guid: 4ae5bc124c4e9b84f9bae98ee3e28f38, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
