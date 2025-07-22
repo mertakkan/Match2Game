@@ -33,6 +33,16 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        // Find references if not assigned
+        if (gridManager == null)
+            gridManager = FindObjectOfType<GridManager>();
+        if (uiManager == null)
+            uiManager = FindObjectOfType<UIManager>();
+        if (audioManager == null)
+            audioManager = FindObjectOfType<AudioManager>();
+        if (effectsManager == null)
+            effectsManager = FindObjectOfType<EffectsManager>();
+
         InitializeGame();
     }
 

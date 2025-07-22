@@ -183,13 +183,14 @@ public class GridManager : MonoBehaviour
         // Check for rocket creation
         bool shouldCreateRocket = matches.Count >= config.rocketTriggerSize;
 
-        // Explode cubes
+        // Explode cubes with proper effects
         foreach (var cell in matches)
         {
             if (cell.cube != null)
             {
                 GameManager.Instance.effectsManager.PlayExplosionEffect(
-                    cell.cube.transform.position
+                    cell.cube.transform.position,
+                    cell.cube.ColorIndex // Pass color index for particle color
                 );
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
