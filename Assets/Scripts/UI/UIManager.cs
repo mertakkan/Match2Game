@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,6 +7,7 @@ public class UIManager : MonoBehaviour
 {
     [Header("UI References")]
     public Text movesText;
+    public TextMeshProUGUI movesTextTMP;
     public Transform goalsContainer;
     public GameObject goalItemPrefab;
 
@@ -14,14 +16,46 @@ public class UIManager : MonoBehaviour
     public GameObject losePanel;
     public Button restartButton;
 
+    [Header("Font Settings")]
+    public Font defaultFont;
+
     private List<GoalUIItem> goalUIItems = new List<GoalUIItem>();
     private GameConfig config;
 
     void Start()
     {
         config = GameManager.Instance.gameConfig;
+
+        if (defaultFont == null)
+        {
+            defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        }
+
+        // Fix the moves text positioning and content
+        FixMovesText();
+
         SetupGoalUI();
         SetupPanels();
+    }
+
+    void FixMovesText()
+    {
+        if (movesTextTMP != null)
+        {
+            // Fix positioning
+            RectTransform movesRect = movesTextTMP.GetComponent<RectTransform>();
+            movesRect.anchorMin = new Vector2(0.1f, 0.5f);
+            movesRect.anchorMax = new Vector2(0.4f, 0.5f);
+            movesRect.anchoredPosition = Vector2.zero;
+            movesRect.sizeDelta = new Vector2(200, 50);
+
+            // Fix text content and styling
+            movesTextTMP.text = "Moves: " + GameManager.Instance.currentMoves;
+            movesTextTMP.fontSize = 28;
+            movesTextTMP.color = Color.white;
+            movesTextTMP.alignment = TextAlignmentOptions.Center;
+            movesTextTMP.fontStyle = FontStyles.Bold;
+        }
     }
 
     void SetupGoalUI()
@@ -29,9 +63,19 @@ public class UIManager : MonoBehaviour
         // Clear existing goal items
         foreach (Transform child in goalsContainer)
         {
-            Destroy(child.gameObject);
+            if (Application.isPlaying)
+                Destroy(child.gameObject);
+            else
+                DestroyImmediate(child.gameObject);
         }
         goalUIItems.Clear();
+
+        // Fix goals container positioning
+        RectTransform goalsRect = goalsContainer.GetComponent<RectTransform>();
+        goalsRect.anchorMin = new Vector2(0.6f, 0.5f);
+        goalsRect.anchorMax = new Vector2(0.9f, 0.5f);
+        goalsRect.anchoredPosition = Vector2.zero;
+        goalsRect.sizeDelta = new Vector2(300, 80);
 
         // Create goal UI items
         foreach (var goal in config.levelGoals)
@@ -43,68 +87,55 @@ public class UIManager : MonoBehaviour
 
     GameObject CreateGoalItem(LevelGoal goal)
     {
-        // Create goal item programmatically if prefab doesn't exist
         GameObject goalItem = new GameObject("GoalItem");
-        goalItem.transform.SetParent(goalsContainer);
+        goalItem.transform.SetParent(goalsContainer, false);
 
-        // Add components
+        // Add background
         Image background = goalItem.AddComponent<Image>();
         background.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
 
-        // Icon
+        // Setup layout
+        RectTransform goalRect = goalItem.GetComponent<RectTransform>();
+        goalRect.sizeDelta = new Vector2(80, 80);
+
+        // Create icon
         GameObject iconObj = new GameObject("Icon");
-        iconObj.transform.SetParent(goalItem.transform);
+        iconObj.transform.SetParent(goalItem.transform, false);
         Image icon = iconObj.AddComponent<Image>();
         icon.sprite = config.cubeSprites[goal.colorIndex];
 
-        // Text
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(goalItem.transform);
-        Text text = textObj.AddComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 24;
-        text.color = Color.white;
-        text.alignment = TextAnchor.MiddleCenter;
+        RectTransform iconRect = iconObj.GetComponent<RectTransform>();
+        iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.7f);
+        iconRect.sizeDelta = new Vector2(40, 40);
+        iconRect.anchoredPosition = Vector2.zero;
 
-        // Setup GoalUIItem component
+        // Create text
+        GameObject textObj = new GameObject("Text");
+        textObj.transform.SetParent(goalItem.transform, false);
+
+        TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
+        tmpText.text = $"0/{goal.targetAmount}";
+        tmpText.fontSize = 18;
+        tmpText.color = Color.white;
+        tmpText.alignment = TextAlignmentOptions.Center;
+        tmpText.fontStyle = FontStyles.Bold;
+
+        RectTransform textRect = textObj.GetComponent<RectTransform>();
+        textRect.anchorMin = textRect.anchorMax = new Vector2(0.5f, 0.3f);
+        textRect.sizeDelta = new Vector2(70, 25);
+        textRect.anchoredPosition = Vector2.zero;
+
+        // Add GoalUIItem component
         GoalUIItem goalUIItem = goalItem.AddComponent<GoalUIItem>();
         goalUIItem.goalIcon = icon;
-        goalUIItem.goalText = text;
+        goalUIItem.goalTextTMP = tmpText;
         goalUIItem.Initialize(goal, config.cubeSprites[goal.colorIndex]);
-
-        // Set RectTransforms
-        SetupGoalItemLayout(goalItem, iconObj, textObj);
 
         return goalItem;
     }
 
-    void SetupGoalItemLayout(GameObject goalItem, GameObject iconObj, GameObject textObj)
-    {
-        // Goal item layout
-        RectTransform goalRect = goalItem.GetComponent<RectTransform>();
-        goalRect.sizeDelta = new Vector2(100, 100);
-        goalRect.anchorMin = goalRect.anchorMax = new Vector2(0.5f, 0.5f);
-        goalRect.localScale = Vector3.one;
-        goalRect.localPosition = Vector3.zero;
-
-        // Icon layout
-        RectTransform iconRect = iconObj.GetComponent<RectTransform>();
-        iconRect.sizeDelta = new Vector2(50, 50);
-        iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.7f);
-        iconRect.localPosition = Vector3.zero;
-        iconRect.localScale = Vector3.one;
-
-        // Text layout
-        RectTransform textRect = textObj.GetComponent<RectTransform>();
-        textRect.sizeDelta = new Vector2(90, 30);
-        textRect.anchorMin = textRect.anchorMax = new Vector2(0.5f, 0.3f);
-        textRect.localPosition = Vector3.zero;
-        textRect.localScale = Vector3.one;
-    }
-
     void SetupPanels()
     {
-        // Create win/lose panels if they don't exist
         if (winPanel == null)
             winPanel = CreateGameOverPanel("You Win!", Color.green);
 
@@ -121,7 +152,7 @@ public class UIManager : MonoBehaviour
     GameObject CreateGameOverPanel(string message, Color color)
     {
         GameObject panel = new GameObject(message + "Panel");
-        panel.transform.SetParent(transform);
+        panel.transform.SetParent(transform, false);
 
         // Background
         Image bg = panel.AddComponent<Image>();
@@ -129,25 +160,25 @@ public class UIManager : MonoBehaviour
 
         // Text
         GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(panel.transform);
-        Text text = textObj.AddComponent<Text>();
-        text.text = message;
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 48;
-        text.color = color;
-        text.alignment = TextAnchor.MiddleCenter;
+        textObj.transform.SetParent(panel.transform, false);
+
+        TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
+        tmpText.text = message;
+        tmpText.fontSize = 48;
+        tmpText.color = color;
+        tmpText.alignment = TextAlignmentOptions.Center;
 
         // Layout
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = Vector2.zero;
         panelRect.anchorMax = Vector2.one;
         panelRect.sizeDelta = Vector2.zero;
-        panelRect.localPosition = Vector3.zero;
+        panelRect.anchoredPosition = Vector2.zero;
 
         RectTransform textRect = textObj.GetComponent<RectTransform>();
         textRect.anchorMin = textRect.anchorMax = new Vector2(0.5f, 0.5f);
         textRect.sizeDelta = new Vector2(400, 100);
-        textRect.localPosition = Vector3.zero;
+        textRect.anchoredPosition = Vector2.zero;
 
         panel.SetActive(false);
         return panel;
@@ -161,8 +192,12 @@ public class UIManager : MonoBehaviour
 
     public void UpdateMoves(int moves)
     {
-        if (movesText)
-            movesText.text = "Moves: " + moves.ToString();
+        string moveText = "Moves: " + moves.ToString();
+
+        if (movesTextTMP != null)
+            movesTextTMP.text = moveText;
+        else if (movesText != null)
+            movesText.text = moveText;
     }
 
     public void UpdateGoals(List<LevelGoal> goals)
@@ -197,7 +232,6 @@ public class UIManager : MonoBehaviour
     {
         foreach (var goalItem in goalUIItems)
         {
-            // Find matching color goal
             if (goalItem != null)
             {
                 return goalItem.GetWorldPosition();

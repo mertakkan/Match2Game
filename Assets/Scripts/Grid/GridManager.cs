@@ -6,7 +6,7 @@ public class GridManager : MonoBehaviour
 {
     [Header("Grid Setup")]
     public Transform gridParent;
-    public GameObject cubePrefab;
+    public GameObject cubePrefab; // This should be assigned in inspector
 
     private GridCell[,] grid;
     private GameConfig config;
@@ -18,18 +18,55 @@ public class GridManager : MonoBehaviour
     void Awake()
     {
         mainCamera = Camera.main;
+
+        // Create cube prefab if not assigned
+        if (cubePrefab == null)
+        {
+            CreateCubePrefab();
+        }
+    }
+
+    void CreateCubePrefab()
+    {
+        // Create prefab programmatically
+        cubePrefab = new GameObject("CubePrefab");
+
+        // Add SpriteRenderer
+        SpriteRenderer sr = cubePrefab.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = 1;
+
+        // Add BoxCollider2D
+        BoxCollider2D collider = cubePrefab.AddComponent<BoxCollider2D>();
+        collider.size = Vector2.one;
+
+        // Add CubeController
+        cubePrefab.AddComponent<CubeController>();
+
+        // Don't make it a child of anything - keep it as a prefab reference
+        cubePrefab.SetActive(false);
+        DontDestroyOnLoad(cubePrefab);
     }
 
     public void InitializeGrid()
     {
         config = GameManager.Instance.gameConfig;
 
+        if (config == null)
+        {
+            Debug.LogError("GameConfig is null! Make sure it's assigned in GameManager.");
+            return;
+        }
+
         // Clear existing grid
         if (gridParent != null)
         {
             foreach (Transform child in gridParent)
             {
-                DestroyImmediate(child.gameObject);
+                if (Application.isPlaying)
+                    Destroy(child.gameObject);
+                else
+                    DestroyImmediate(child.gameObject);
             }
         }
 
@@ -58,17 +95,23 @@ public class GridManager : MonoBehaviour
         float totalWidth = Width * config.cellSize + (Width - 1) * config.gridSpacing;
         float totalHeight = Height * config.cellSize + (Height - 1) * config.gridSpacing;
 
-        // Center the grid
+        // Center the grid at Z = 0 (in front of camera)
         Vector3 gridOffset = new Vector3(
             -totalWidth * 0.5f + config.cellSize * 0.5f,
             -totalHeight * 0.5f + config.cellSize * 0.5f,
-            0
+            0 // Changed from -10 to 0
         );
-        gridParent.position = gridOffset;
 
-        // Adjust camera size to fit grid
-        float requiredSize = Mathf.Max(totalHeight * 0.6f, totalWidth * 0.6f / mainCamera.aspect);
+        if (gridParent != null)
+        {
+            gridParent.position = gridOffset;
+        }
+
+        // Adjust camera size to fit grid with some padding
+        float requiredSize = Mathf.Max(totalHeight * 0.7f, totalWidth * 0.7f / mainCamera.aspect);
         mainCamera.orthographicSize = requiredSize;
+
+        Debug.Log($"Grid size: {Width}x{Height}, Camera size: {requiredSize}");
     }
 
     void FillInitialGrid()
@@ -80,12 +123,36 @@ public class GridManager : MonoBehaviour
                 CreateRandomCube(x, y);
             }
         }
+
+        Debug.Log($"Created {Width * Height} cubes");
     }
 
     void CreateRandomCube(int x, int y)
     {
+        if (cubePrefab == null)
+        {
+            Debug.LogError("CubePrefab is not assigned!");
+            return;
+        }
+
+        if (config.cubeSprites == null || config.cubeSprites.Length == 0)
+        {
+            Debug.LogError("No cube sprites assigned in GameConfig!");
+            return;
+        }
+
+        // Instantiate cube
         GameObject cubeObj = Instantiate(cubePrefab, gridParent);
+        cubeObj.SetActive(true); // Make sure it's active
+        cubeObj.name = $"Cube_{x}_{y}";
+
         CubeController cube = cubeObj.GetComponent<CubeController>();
+
+        if (cube == null)
+        {
+            Debug.LogError("CubePrefab doesn't have CubeController component!");
+            return;
+        }
 
         int randomColorIndex = Random.Range(0, config.cubeSprites.Length);
         cube.Initialize(randomColorIndex, config.cubeSprites[randomColorIndex]);
@@ -105,6 +172,7 @@ public class GridManager : MonoBehaviour
         return gridParent.position + new Vector3(worldX, worldY, 0);
     }
 
+    // ... rest of your methods remain the same
     public Vector2Int WorldToGridPosition(Vector3 worldPos)
     {
         Vector3 localPos = worldPos - gridParent.position;
@@ -190,7 +258,7 @@ public class GridManager : MonoBehaviour
             {
                 GameManager.Instance.effectsManager.PlayExplosionEffect(
                     cell.cube.transform.position,
-                    cell.cube.ColorIndex // Pass color index for particle color
+                    cell.cube.ColorIndex
                 );
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
@@ -214,7 +282,31 @@ public class GridManager : MonoBehaviour
 
     void CreateRocket(Vector2Int position)
     {
-        Debug.Log($"Creating rocket at {position}");
+        // Random direction
+        RocketController.RocketDirection direction =
+            Random.Range(0, 2) == 0
+                ? RocketController.RocketDirection.Horizontal
+                : RocketController.RocketDirection.Vertical;
+
+        // Create rocket GameObject
+        GameObject rocketObj = new GameObject("Rocket");
+        rocketObj.transform.SetParent(gridParent);
+
+        // Add components
+        SpriteRenderer sr = rocketObj.AddComponent<SpriteRenderer>();
+        BoxCollider2D col = rocketObj.AddComponent<BoxCollider2D>();
+        RocketController rocket = rocketObj.AddComponent<RocketController>();
+
+        // Initialize rocket
+        rocket.Initialize(direction, position);
+
+        Debug.Log($"Created {direction} rocket at {position}");
+    }
+
+    public IEnumerator ApplyGravityAndFill()
+    {
+        yield return StartCoroutine(ApplyGravity());
+        yield return StartCoroutine(FillEmptySpaces());
     }
 
     IEnumerator ApplyGravity()

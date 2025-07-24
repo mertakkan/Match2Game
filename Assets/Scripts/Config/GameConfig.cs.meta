@@ -4,8 +4,8 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - balloonSprite: {instanceID: 0}
-  - duckSprite: {instanceID: 0}
+  - balloonSprite: {fileID: 21300000, guid: 720393fe72b61d04390cb6d5f3975662, type: 3}
+  - duckSprite: {fileID: 21300000, guid: 579e8ac9341cd294daaacfc459ff6337, type: 3}
   - rocketHorizontalSprite: {instanceID: 0}
   - rocketVerticalSprite: {instanceID: 0}
   - backgroundSprite: {instanceID: 0}

@@ -36,7 +36,10 @@ MonoBehaviour:
   particleSprites:
   - {fileID: 21300000, guid: c8393b89f3d5d1f40b7718d933c4005a, type: 3}
   - {fileID: 21300000, guid: 41993b93e0cd672429949c831fc4464e, type: 3}
-  levelGoals: []
+  levelGoals:
+  - colorIndex: 0
+    targetAmount: 15
+    currentAmount: 0
   cubeFallSpeed: 5
   explosionDuration: 0.5
   rocketMoveSpeed: 10

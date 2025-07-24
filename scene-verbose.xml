@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="utf-8"?>
+<u:Scene version="1" xmlns:u="http://pantherkitty.software/xml/unity-scene/1.0">
+  <u:GameObject name="Main Camera" tag="MainCamera" id="0x00005D56" layer="0" activeInHierarchy="True" isStatic="False">
+    <u:Transform id="0x00005D5C">
+      <u:Vector3 name="position">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>-10</u:z>
+      </u:Vector3>
+      <u:Vector3 name="rotation">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="scale">
+        <u:x>1</u:x>
+        <u:y>1</u:y>
+        <u:z>1</u:z>
+      </u:Vector3>
+    </u:Transform>
+    <u:components>
+      <u:Behaviour type="UnityEngine.Camera" id="0x00005D5A" enabled="True" isActiveAndEnabled="True">
+        <u:properties>
+          <u:property name="m_ClearFlags" type="System.String" sp-name="Clear Flags" sp-type="Enum" sp-enum-index="1">Solid Color</u:property>
+          <u:property name="m_BackGroundColor" type="UnityEngine.Color" sp-name="Back Ground Color">
+            <u:Color name="m_BackGroundColor">
+              <u:r>0.1921569</u:r>
+              <u:g>0.3019608</u:g>
+              <u:b>0.4745098</u:b>
+              <u:a>0</u:a>
+            </u:Color>
+          </u:property>
+          <u:property name="m_projectionMatrixMode" type="System.Int32" sp-name="Projection Matrix Mode">1</u:property>
+          <u:property name="m_GateFitMode" type="System.Int32" sp-name="Gate Fit Mode">2</u:property>
+          <u:property name="m_FOVAxisMode" type="System.Int32" sp-name="FOV Axis Mode">0</u:property>
+          <u:property name="m_SensorSize" type="UnityEngine.Vector2" sp-name="Sensor Size">
+            <u:Vector2 name="m_SensorSize">
+              <u:x>36</u:x>
+              <u:y>24</u:y>
+            </u:Vector2>
+          </u:property>
+          <u:property name="m_LensShift" type="UnityEngine.Vector2" sp-name="Lens Shift">
+            <u:Vector2 name="m_LensShift">
+              <u:x>0</u:x>
+              <u:y>0</u:y>
+            </u:Vector2>
+          </u:property>
+          <u:property name="m_FocalLength" type="System.Single" sp-name="Focal Length">50</u:property>
+          <u:property name="m_NormalizedViewPortRect" type="UnityEngine.Rect" sp-name="Normalized View Port Rect">(x:0.00, y:0.00, width:1.00, height:1.00)</u:property>
+          <u:property name="near clip plane" type="System.Single" sp-name="Near clip plane">0.3</u:property>
+          <u:property name="far clip plane" type="System.Single" sp-name="Far clip plane">1000</u:property>
+          <u:property name="field of view" type="System.Single" sp-name="Field of view">60</u:property>
+          <u:property name="orthographic" type="System.Boolean" sp-name="Orthographic">True</u:property>
+          <u:property name="orthographic size" type="System.Single" sp-name="Orthographic size">10</u:property>
+          <u:property name="m_Depth" type="System.Single" sp-name="Depth">-1</u:property>
+          <u:property name="m_CullingMask" type="System.UInt32" sp-name="Culling Mask">FFFFFFFF</u:property>
+          <u:property name="m_RenderingPath" type="System.String" sp-name="Rendering Path" sp-type="Enum" sp-enum-index="0">Use Graphics Settings</u:property>
+          <u:property name="m_TargetDisplay" type="System.Int32" sp-name="Target Display">0</u:property>
+          <u:property name="m_TargetEye" type="System.Int32" sp-name="Target Eye">0</u:property>
+          <u:property name="m_HDR" type="System.Boolean" sp-name="HDR">True</u:property>
+          <u:property name="m_AllowMSAA" type="System.Boolean" sp-name="Allow MSAA">False</u:property>
+          <u:property name="m_AllowDynamicResolution" type="System.Boolean" sp-name="Allow Dynamic Resolution">False</u:property>
+          <u:property name="m_ForceIntoRT" type="System.Boolean" sp-name="Force Into RT">False</u:property>
+          <u:property name="m_OcclusionCulling" type="System.Boolean" sp-name="Occlusion Culling">False</u:property>
+          <u:property name="m_StereoConvergence" type="System.Single" sp-name="Stereo Convergence">10</u:property>
+          <u:property name="m_StereoSeparation" type="System.Single" sp-name="Stereo Separation">0.022</u:property>
+        </u:properties>
+      </u:Behaviour>
+      <u:Behaviour type="UnityEngine.AudioListener" id="0x00005D58" enabled="True" isActiveAndEnabled="True">
+        <u:extends>
+          <u:superclass>UnityEngine.AudioBehaviour</u:superclass>
+        </u:extends>
+        <u:properties />
+      </u:Behaviour>
+    </u:components>
+  </u:GameObject>
+  <u:GameObject name="GameManager" tag="Untagged" id="0x00005D7E" layer="0" activeInHierarchy="True" isStatic="False">
+    <u:Transform id="0x00005D88">
+      <u:Vector3 name="position">
+        <u:x>1.143615</u:x>
+        <u:y>0.3519058</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="rotation">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="scale">
+        <u:x>1</u:x>
+        <u:y>1</u:y>
+        <u:z>1</u:z>
+      </u:Vector3>
+    </u:Transform>
+    <u:components>
+      <u:MonoBehaviour type="GameManager" id="0x00005D86" enabled="True" isActiveAndEnabled="True">
+        <u:properties>
+          <u:property name="gameConfig" type="GameConfig" sp-name="Game Config" sp-type="ObjectReference" target-id="0x00005D9E">GameConfig (GameConfig)</u:property>
+          <u:property name="gridManager" type="GridManager" target-name="GridManager" target-id="0x00005D94" sp-name="Grid Manager" sp-type="ObjectReference">GridManager (GridManager)</u:property>
+          <u:property name="uiManager" type="UIManager" target-name="GameManager" target-id="0x00005D84" sp-name="Ui Manager" sp-type="ObjectReference">GameManager (UIManager)</u:property>
+          <u:property name="audioManager" type="AudioManager" target-name="GameManager" target-id="0x00005D82" sp-name="Audio Manager" sp-type="ObjectReference">GameManager (AudioManager)</u:property>
+          <u:property name="effectsManager" type="EffectsManager" target-name="GameManager" target-id="0x00005D80" sp-name="Effects Manager" sp-type="ObjectReference">GameManager (EffectsManager)</u:property>
+          <u:property name="currentMoves" type="System.Int32" sp-name="Current Moves">0</u:property>
+          <u:property name="gameActive" type="System.Boolean" sp-name="Game Active">True</u:property>
+          <u:property-array name="currentGoals" type="System.Object[]" dimensions="1" length="0" size="0" isEmpty="True" sp-name="Current Goals" sp-type="Generic" />
+        </u:properties>
+      </u:MonoBehaviour>
+      <u:MonoBehaviour type="UIManager" id="0x00005D84" enabled="True" isActiveAndEnabled="True">
+        <u:referenced-by component-id="0x00005D86" property-name="uiManager">GameManager -» u:MonoBehaviour(GameManager) •-» uiManager</u:referenced-by>
+        <u:properties>
+          <u:property name="movesTextTMP" type="TMPro.TextMeshProUGUI" target-name="MovesText" target-id="0x00005D8E" sp-name="Moves Text TMP" sp-type="ObjectReference">MovesText (TMPro.TextMeshProUGUI)</u:property>
+          <u:property name="goalsContainer" type="UnityEngine.RectTransform" target-name="GoalsContainer" target-id="0x00005D72" sp-name="Goals Container" sp-type="ObjectReference">GoalsContainer (UnityEngine.RectTransform)</u:property>
+        </u:properties>
+      </u:MonoBehaviour>
+      <u:MonoBehaviour type="AudioManager" id="0x00005D82" enabled="True" isActiveAndEnabled="True">
+        <u:referenced-by component-id="0x00005D86" property-name="audioManager">GameManager -» u:MonoBehaviour(GameManager) •-» audioManager</u:referenced-by>
+        <u:properties />
+      </u:MonoBehaviour>
+      <u:MonoBehaviour type="EffectsManager" id="0x00005D80" enabled="True" isActiveAndEnabled="True">
+        <u:referenced-by component-id="0x00005D86" property-name="effectsManager">GameManager -» u:MonoBehaviour(GameManager) •-» effectsManager</u:referenced-by>
+        <u:properties />
+      </u:MonoBehaviour>
+    </u:components>
+  </u:GameObject>
+  <u:GameObject name="GridManager" tag="Untagged" id="0x00005D92" layer="0" activeInHierarchy="True" isStatic="False">
+    <u:Transform id="0x00005D96">
+      <u:Vector3 name="position">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>-10</u:z>
+      </u:Vector3>
+      <u:Vector3 name="rotation">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="scale">
+        <u:x>1</u:x>
+        <u:y>1</u:y>
+        <u:z>1</u:z>
+      </u:Vector3>
+    </u:Transform>
+    <u:components>
+      <u:MonoBehaviour type="GridManager" id="0x00005D94" enabled="True" isActiveAndEnabled="True">
+        <u:referenced-by component-id="0x00005D86" property-name="gridManager">GameManager -» u:MonoBehaviour(GameManager) •-» gridManager</u:referenced-by>
+        <u:properties>
+          <u:property name="gridParent" type="UnityEngine.Transform" target-name="GridParent" target-id="0x00005D44" sp-name="Grid Parent" sp-type="ObjectReference">GridParent (UnityEngine.Transform)</u:property>
+          <u:property name="cubePrefab" type="UnityEngine.GameObject" target-name="CubePrefab" target-id="0x00005DA4" sp-name="Cube Prefab" sp-type="ObjectReference" />
+        </u:properties>
+      </u:MonoBehaviour>
+    </u:components>
+    <u:gameobjects>
+      <u:GameObject name="GridParent" tag="Untagged" id="0x00005D42" layer="0" activeInHierarchy="True" isStatic="False">
+        <u:Transform id="0x00005D44">
+          <u:referenced-by component-id="0x00005D94" property-name="gridParent">GridManager -» u:MonoBehaviour(GridManager) •-» gridParent</u:referenced-by>
+          <u:Vector3 name="position">
+            <u:x>0</u:x>
+            <u:y>0</u:y>
+            <u:z>-10</u:z>
+          </u:Vector3>
+          <u:Vector3 name="rotation">
+            <u:x>0</u:x>
+            <u:y>0</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector3 name="scale">
+            <u:x>1</u:x>
+            <u:y>1</u:y>
+            <u:z>1</u:z>
+          </u:Vector3>
+        </u:Transform>
+      </u:GameObject>
+    </u:gameobjects>
+  </u:GameObject>
+  <u:GameObject name="MainCanvas" tag="Untagged" id="0x00005D66" layer="5" activeInHierarchy="True" isStatic="False">
+    <u:RectTransform id="0x00005D6E">
+      <u:Vector3 name="pos">
+        <u:x>166</u:x>
+        <u:y>295</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector2 name="anchorMin">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+      </u:Vector2>
+      <u:Vector2 name="anchorMax">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+      </u:Vector2>
+      <u:Vector2 name="pivot">
+        <u:x>0.5</u:x>
+        <u:y>0.5</u:y>
+      </u:Vector2>
+      <u:Vector3 name="rotation">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="scale">
+        <u:x>0.3073495</u:x>
+        <u:y>0.3073495</u:y>
+        <u:z>0.3073495</u:z>
+      </u:Vector3>
+    </u:RectTransform>
+    <u:components>
+      <u:Behaviour type="UnityEngine.Canvas" id="0x00005D6C" enabled="True" isActiveAndEnabled="True">
+        <u:properties>
+          <u:property name="m_RenderMode" type="System.String" sp-name="Render Mode" sp-type="Enum" sp-enum-index="0">Screen Space - Overlay</u:property>
+          <u:property name="m_PlaneDistance" type="System.Single" sp-name="Plane Distance">100</u:property>
+          <u:property name="m_PixelPerfect" type="System.Boolean" sp-name="Pixel Perfect">False</u:property>
+          <u:property name="m_ReceivesEvents" type="System.Boolean" sp-name="Receives Events">True</u:property>
+          <u:property name="m_OverrideSorting" type="System.Boolean" sp-name="Override Sorting">False</u:property>
+          <u:property name="m_OverridePixelPerfect" type="System.Boolean" sp-name="Override Pixel Perfect">False</u:property>
+          <u:property name="m_SortingBucketNormalizedSize" type="System.Single" sp-name="Sorting Bucket Normalized Size">0</u:property>
+          <u:property name="m_AdditionalShaderChannelsFlag" type="System.String" sp-name="Additional Shader Channels Flag" sp-type="Enum" sp-enum-index="-1">«error[enumValueIndex -1 is negative]»</u:property>
+        </u:properties>
+      </u:Behaviour>
+      <u:MonoBehaviour type="UnityEngine.UI.CanvasScaler" id="0x00005D6A" enabled="True" isActiveAndEnabled="True">
+        <u:extends>
+          <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+        </u:extends>
+        <u:properties>
+          <u:property name="m_UiScaleMode" type="System.String" sp-name="Ui Scale Mode" sp-type="Enum" sp-enum-index="1">Scale With Screen Size</u:property>
+          <u:property name="m_ReferencePixelsPerUnit" type="System.Single" sp-name="Reference Pixels Per Unit">100</u:property>
+          <u:property name="m_ScaleFactor" type="System.Single" sp-name="Scale Factor">1</u:property>
+          <u:property name="m_ReferenceResolution" type="UnityEngine.Vector2" sp-name="Reference Resolution">
+            <u:Vector2 name="m_ReferenceResolution">
+              <u:x>1080</u:x>
+              <u:y>1920</u:y>
+            </u:Vector2>
+          </u:property>
+          <u:property name="m_ScreenMatchMode" type="System.String" sp-name="Screen Match Mode" sp-type="Enum" sp-enum-index="0">Match Width Or Height</u:property>
+          <u:property name="m_MatchWidthOrHeight" type="System.Single" sp-name="Match Width Or Height">0.5</u:property>
+          <u:property name="m_PhysicalUnit" type="System.String" sp-name="Physical Unit" sp-type="Enum" sp-enum-index="3">Points</u:property>
+          <u:property name="m_FallbackScreenDPI" type="System.Single" sp-name="Fallback Screen DPI">96</u:property>
+          <u:property name="m_DefaultSpriteDPI" type="System.Single" sp-name="Default Sprite DPI">96</u:property>
+          <u:property name="m_DynamicPixelsPerUnit" type="System.Single" sp-name="Dynamic Pixels Per Unit">1</u:property>
+          <u:property name="m_PresetInfoIsWorld" type="System.Boolean" sp-name="Preset Info Is World">False</u:property>
+        </u:properties>
+      </u:MonoBehaviour>
+      <u:MonoBehaviour type="UnityEngine.UI.GraphicRaycaster" id="0x00005D68" enabled="True" isActiveAndEnabled="True">
+        <u:extends>
+          <u:superclass>UnityEngine.EventSystems.BaseRaycaster</u:superclass>
+          <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+        </u:extends>
+        <u:properties>
+          <u:property name="m_IgnoreReversedGraphics" type="System.Boolean" sp-name="Ignore Reversed Graphics">True</u:property>
+          <u:property name="m_BlockingObjects" type="System.String" sp-name="Blocking Objects" sp-type="Enum" sp-enum-index="0">None</u:property>
+          <u:property name="m_BlockingMask" type="System.UInt32" sp-name="Blocking Mask">FFFFFFFF</u:property>
+        </u:properties>
+      </u:MonoBehaviour>
+    </u:components>
+    <u:gameobjects>
+      <u:GameObject name="Background" tag="Untagged" id="0x00005D46" layer="5" activeInHierarchy="True" isStatic="False">
+        <u:RectTransform id="0x00005D48">
+          <u:Vector3 name="pos">
+            <u:x>0</u:x>
+            <u:y>-960</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector2 name="anchorMin">
+            <u:x>0</u:x>
+            <u:y>1</u:y>
+          </u:Vector2>
+          <u:Vector2 name="anchorMax">
+            <u:x>1</u:x>
+            <u:y>1</u:y>
+          </u:Vector2>
+          <u:Vector2 name="pivot">
+            <u:x>0.5</u:x>
+            <u:y>0.5</u:y>
+          </u:Vector2>
+          <u:Vector3 name="rotation">
+            <u:x>0</u:x>
+            <u:y>0</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector3 name="scale">
+            <u:x>1</u:x>
+            <u:y>1</u:y>
+            <u:z>1</u:z>
+          </u:Vector3>
+        </u:RectTransform>
+        <u:components>
+          <u:Component type="UnityEngine.CanvasRenderer" id="0x00005D4C">
+            <u:properties>
+              <u:property name="m_CullTransparentMesh" type="System.Boolean" sp-name="Cull Transparent Mesh">True</u:property>
+            </u:properties>
+          </u:Component>
+          <u:MonoBehaviour type="UnityEngine.UI.Image" id="0x00005D4A" enabled="True" isActiveAndEnabled="True">
+            <u:extends>
+              <u:superclass>UnityEngine.UI.MaskableGraphic</u:superclass>
+              <u:superclass>UnityEngine.UI.Graphic</u:superclass>
+              <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+            </u:extends>
+            <u:implements>
+              <u:interface>UnityEngine.UI.IMaterialModifier</u:interface>
+              <u:interface>UnityEngine.UI.IMaskable</u:interface>
+              <u:interface>UnityEngine.ICanvasRaycastFilter</u:interface>
+              <u:interface>UnityEngine.ISerializationCallbackReceiver</u:interface>
+              <u:interface>UnityEngine.UI.ICanvasElement</u:interface>
+              <u:interface>UnityEngine.UI.ILayoutElement</u:interface>
+              <u:interface>UnityEngine.UI.IClippable</u:interface>
+            </u:implements>
+            <u:properties>
+              <u:property name="m_Color" type="UnityEngine.Color" sp-name="Color">
+                <u:Color name="m_Color">
+                  <u:r>1</u:r>
+                  <u:g>1</u:g>
+                  <u:b>1</u:b>
+                  <u:a>1</u:a>
+                </u:Color>
+              </u:property>
+              <u:property name="m_RaycastTarget" type="System.Boolean" sp-name="Raycast Target">True</u:property>
+              <u:property name="m_RaycastPadding" type="UnityEngine.Vector4" sp-name="Raycast Padding">
+                <u:Vector4 name="m_RaycastPadding">
+                  <u:w>0</u:w>
+                  <u:x>0</u:x>
+                  <u:y>0</u:y>
+                  <u:z>0</u:z>
+                </u:Vector4>
+              </u:property>
+              <u:property name="m_Maskable" type="System.Boolean" sp-name="Maskable">True</u:property>
+              <u:property name="m_OnCullStateChanged" type="scenedump.UnknownType" sp-name="On Cull State Changed" sp-type="Generic">«@ToDo:unknown-type[Generic]»</u:property>
+              <u:property name="m_Sprite" type="UnityEngine.Sprite" sp-name="Sprite" sp-type="ObjectReference" target-id="0x00005D98">background (UnityEngine.Sprite)</u:property>
+              <u:property name="m_Type" type="System.String" sp-name="Type" sp-type="Enum" sp-enum-index="0">Simple</u:property>
+              <u:property name="m_PreserveAspect" type="System.Boolean" sp-name="Preserve Aspect">False</u:property>
+              <u:property name="m_FillCenter" type="System.Boolean" sp-name="Fill Center">True</u:property>
+              <u:property name="m_FillMethod" type="System.String" sp-name="Fill Method" sp-type="Enum" sp-enum-index="4">Radial 360</u:property>
+              <u:property name="m_FillAmount" type="System.Single" sp-name="Fill Amount">1</u:property>
+              <u:property name="m_FillClockwise" type="System.Boolean" sp-name="Fill Clockwise">True</u:property>
+              <u:property name="m_FillOrigin" type="System.Int32" sp-name="Fill Origin">0</u:property>
+              <u:property name="m_UseSpriteMesh" type="System.Boolean" sp-name="Use Sprite Mesh">False</u:property>
+              <u:property name="m_PixelsPerUnitMultiplier" type="System.Single" sp-name="Pixels Per Unit Multiplier">1</u:property>
+            </u:properties>
+          </u:MonoBehaviour>
+        </u:components>
+      </u:GameObject>
+      <u:GameObject name="TopUI" tag="Untagged" id="0x00005D4E" layer="5" activeInHierarchy="True" isStatic="False">
+        <u:RectTransform id="0x00005D50">
+          <u:Vector3 name="pos">
+            <u:x>0</u:x>
+            <u:y>-150</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector2 name="anchorMin">
+            <u:x>0</u:x>
+            <u:y>1</u:y>
+          </u:Vector2>
+          <u:Vector2 name="anchorMax">
+            <u:x>1</u:x>
+            <u:y>1</u:y>
+          </u:Vector2>
+          <u:Vector2 name="pivot">
+            <u:x>0.5</u:x>
+            <u:y>0.5</u:y>
+          </u:Vector2>
+          <u:Vector3 name="rotation">
+            <u:x>0</u:x>
+            <u:y>0</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector3 name="scale">
+            <u:x>1</u:x>
+            <u:y>1</u:y>
+            <u:z>1</u:z>
+          </u:Vector3>
+        </u:RectTransform>
+        <u:components>
+          <u:Component type="UnityEngine.CanvasRenderer" id="0x00005D54">
+            <u:properties>
+              <u:property name="m_CullTransparentMesh" type="System.Boolean" sp-name="Cull Transparent Mesh">True</u:property>
+            </u:properties>
+          </u:Component>
+          <u:MonoBehaviour type="UnityEngine.UI.Image" id="0x00005D52" enabled="True" isActiveAndEnabled="True">
+            <u:extends>
+              <u:superclass>UnityEngine.UI.MaskableGraphic</u:superclass>
+              <u:superclass>UnityEngine.UI.Graphic</u:superclass>
+              <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+            </u:extends>
+            <u:implements>
+              <u:interface>UnityEngine.UI.IMaterialModifier</u:interface>
+              <u:interface>UnityEngine.UI.IMaskable</u:interface>
+              <u:interface>UnityEngine.ICanvasRaycastFilter</u:interface>
+              <u:interface>UnityEngine.ISerializationCallbackReceiver</u:interface>
+              <u:interface>UnityEngine.UI.ICanvasElement</u:interface>
+              <u:interface>UnityEngine.UI.ILayoutElement</u:interface>
+              <u:interface>UnityEngine.UI.IClippable</u:interface>
+            </u:implements>
+            <u:properties>
+              <u:property name="m_Color" type="UnityEngine.Color" sp-name="Color">
+                <u:Color name="m_Color">
+                  <u:r>1</u:r>
+                  <u:g>1</u:g>
+                  <u:b>1</u:b>
+                  <u:a>1</u:a>
+                </u:Color>
+              </u:property>
+              <u:property name="m_RaycastTarget" type="System.Boolean" sp-name="Raycast Target">True</u:property>
+              <u:property name="m_RaycastPadding" type="UnityEngine.Vector4" sp-name="Raycast Padding">
+                <u:Vector4 name="m_RaycastPadding">
+                  <u:w>0</u:w>
+                  <u:x>0</u:x>
+                  <u:y>0</u:y>
+                  <u:z>0</u:z>
+                </u:Vector4>
+              </u:property>
+              <u:property name="m_Maskable" type="System.Boolean" sp-name="Maskable">True</u:property>
+              <u:property name="m_OnCullStateChanged" type="scenedump.UnknownType" sp-name="On Cull State Changed" sp-type="Generic">«@ToDo:unknown-type[Generic]»</u:property>
+              <u:property name="m_Sprite" type="UnityEngine.Sprite" sp-name="Sprite" sp-type="ObjectReference" target-id="0x00005D9A">top_ui (UnityEngine.Sprite)</u:property>
+              <u:property name="m_Type" type="System.String" sp-name="Type" sp-type="Enum" sp-enum-index="0">Simple</u:property>
+              <u:property name="m_PreserveAspect" type="System.Boolean" sp-name="Preserve Aspect">False</u:property>
+              <u:property name="m_FillCenter" type="System.Boolean" sp-name="Fill Center">True</u:property>
+              <u:property name="m_FillMethod" type="System.String" sp-name="Fill Method" sp-type="Enum" sp-enum-index="4">Radial 360</u:property>
+              <u:property name="m_FillAmount" type="System.Single" sp-name="Fill Amount">1</u:property>
+              <u:property name="m_FillClockwise" type="System.Boolean" sp-name="Fill Clockwise">True</u:property>
+              <u:property name="m_FillOrigin" type="System.Int32" sp-name="Fill Origin">0</u:property>
+              <u:property name="m_UseSpriteMesh" type="System.Boolean" sp-name="Use Sprite Mesh">False</u:property>
+              <u:property name="m_PixelsPerUnitMultiplier" type="System.Single" sp-name="Pixels Per Unit Multiplier">1</u:property>
+            </u:properties>
+          </u:MonoBehaviour>
+        </u:components>
+        <u:gameobjects>
+          <u:GameObject name="MovesText" tag="Untagged" id="0x00005D8A" layer="5" activeInHierarchy="True" isStatic="False">
+            <u:RectTransform id="0x00005D8C">
+              <u:Vector3 name="pos">
+                <u:x>496</u:x>
+                <u:y>25</u:y>
+                <u:z>0</u:z>
+              </u:Vector3>
+              <u:Vector2 name="anchorMin">
+                <u:x>0.5</u:x>
+                <u:y>0.5</u:y>
+              </u:Vector2>
+              <u:Vector2 name="anchorMax">
+                <u:x>0.5</u:x>
+                <u:y>0.5</u:y>
+              </u:Vector2>
+              <u:Vector2 name="pivot">
+                <u:x>0.5</u:x>
+                <u:y>0.5</u:y>
+              </u:Vector2>
+              <u:Vector3 name="rotation">
+                <u:x>0</u:x>
+                <u:y>0</u:y>
+                <u:z>0</u:z>
+              </u:Vector3>
+              <u:Vector3 name="scale">
+                <u:x>1</u:x>
+                <u:y>1</u:y>
+                <u:z>1</u:z>
+              </u:Vector3>
+            </u:RectTransform>
+            <u:components>
+              <u:Component type="UnityEngine.CanvasRenderer" id="0x00005D90">
+                <u:properties>
+                  <u:property name="m_CullTransparentMesh" type="System.Boolean" sp-name="Cull Transparent Mesh">True</u:property>
+                </u:properties>
+              </u:Component>
+              <u:MonoBehaviour type="TMPro.TextMeshProUGUI" id="0x00005D8E" enabled="True" isActiveAndEnabled="True">
+                <u:referenced-by component-id="0x00005D84" property-name="movesTextTMP">GameManager -» u:MonoBehaviour(UIManager) •-» movesTextTMP</u:referenced-by>
+                <u:extends>
+                  <u:superclass>TMPro.TMP_Text</u:superclass>
+                  <u:superclass>UnityEngine.UI.MaskableGraphic</u:superclass>
+                  <u:superclass>UnityEngine.UI.Graphic</u:superclass>
+                  <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+                </u:extends>
+                <u:implements>
+                  <u:interface>UnityEngine.UI.IMaterialModifier</u:interface>
+                  <u:interface>UnityEngine.UI.IMaskable</u:interface>
+                  <u:interface>UnityEngine.UI.ICanvasElement</u:interface>
+                  <u:interface>UnityEngine.UI.ILayoutElement</u:interface>
+                  <u:interface>UnityEngine.UI.IClippable</u:interface>
+                </u:implements>
+                <u:properties>
+                  <u:property name="m_Color" type="UnityEngine.Color" sp-name="Color">
+                    <u:Color name="m_Color">
+                      <u:r>1</u:r>
+                      <u:g>1</u:g>
+                      <u:b>1</u:b>
+                      <u:a>1</u:a>
+                    </u:Color>
+                  </u:property>
+                  <u:property name="m_RaycastTarget" type="System.Boolean" sp-name="Raycast Target">True</u:property>
+                  <u:property name="m_RaycastPadding" type="UnityEngine.Vector4" sp-name="Raycast Padding">
+                    <u:Vector4 name="m_RaycastPadding">
+                      <u:w>0</u:w>
+                      <u:x>0</u:x>
+                      <u:y>0</u:y>
+                      <u:z>0</u:z>
+                    </u:Vector4>
+                  </u:property>
+                  <u:property name="m_Maskable" type="System.Boolean" sp-name="Maskable">True</u:property>
+                  <u:property name="m_OnCullStateChanged" type="scenedump.UnknownType" sp-name="On Cull State Changed" sp-type="Generic">«@ToDo:unknown-type[Generic]»</u:property>
+                  <u:property name="m_text" type="System.String" sp-name="Text">20</u:property>
+                  <u:property name="m_isRightToLeft" type="System.Boolean" sp-name="Is Right To Left">False</u:property>
+                  <u:property name="m_fontAsset" type="TMPro.TMP_FontAsset" sp-name="Font Asset" sp-type="ObjectReference" target-id="0x00005DA0">LiberationSans SDF (TMPro.TMP_FontAsset)</u:property>
+                  <u:property name="m_sharedMaterial" type="UnityEngine.Material" sp-name="Shared Material" sp-type="ObjectReference" target-id="0x00005DA2">LiberationSans SDF Material (UnityEngine.Material)</u:property>
+                  <u:property-array name="m_fontSharedMaterials" type="System.Object[]" dimensions="1" length="0" size="0" isEmpty="True" sp-name="Font Shared Materials" sp-type="Generic" />
+                  <u:property-array name="m_fontMaterials" type="System.Object[]" dimensions="1" length="0" size="0" isEmpty="True" sp-name="Font Materials" sp-type="Generic" />
+                  <u:property name="m_fontColor32" type="UnityEngine.Color" sp-name="Font Color 32">
+                    <u:Color name="m_fontColor32">
+                      <u:r>0</u:r>
+                      <u:g>0</u:g>
+                      <u:b>0</u:b>
+                      <u:a>1</u:a>
+                    </u:Color>
+                  </u:property>
+                  <u:property name="m_fontColor" type="UnityEngine.Color" sp-name="Font Color">
+                    <u:Color name="m_fontColor">
+                      <u:r>0</u:r>
+                      <u:g>0</u:g>
+                      <u:b>0</u:b>
+                      <u:a>1</u:a>
+                    </u:Color>
+                  </u:property>
+                  <u:property name="m_enableVertexGradient" type="System.Boolean" sp-name="Enable Vertex Gradient">False</u:property>
+                  <u:property name="m_colorMode" type="System.String" sp-name="Color Mode" sp-type="Enum" sp-enum-index="3">Four Corners Gradient</u:property>
+                  <u:property name="m_fontColorGradient" type="scenedump.UnknownType" sp-name="Font Color Gradient" sp-type="Generic">«@ToDo:unknown-type[Generic]»</u:property>
+                  <u:property name="m_tintAllSprites" type="System.Boolean" sp-name="Tint All Sprites">False</u:property>
+                  <u:property name="m_TextStyleHashCode" type="System.Int32" sp-name="Text Style Hash Code">-1183493901</u:property>
+                  <u:property name="m_overrideHtmlColors" type="System.Boolean" sp-name="Override Html Colors">False</u:property>
+                  <u:property name="m_faceColor" type="UnityEngine.Color" sp-name="Face Color">
+                    <u:Color name="m_faceColor">
+                      <u:r>1</u:r>
+                      <u:g>1</u:g>
+                      <u:b>1</u:b>
+                      <u:a>1</u:a>
+                    </u:Color>
+                  </u:property>
+                  <u:property name="m_fontSize" type="System.Single" sp-name="Font Size">34</u:property>
+                  <u:property name="m_fontSizeBase" type="System.Single" sp-name="Font Size Base">34</u:property>
+                  <u:property name="m_fontWeight" type="System.String" sp-name="Font Weight" sp-type="Enum" sp-enum-index="3">Regular</u:property>
+                  <u:property name="m_enableAutoSizing" type="System.Boolean" sp-name="Enable Auto Sizing">False</u:property>
+                  <u:property name="m_fontSizeMin" type="System.Single" sp-name="Font Size Min">18</u:property>
+                  <u:property name="m_fontSizeMax" type="System.Single" sp-name="Font Size Max">72</u:property>
+                  <u:property name="m_fontStyle" type="System.String" sp-name="Font Style" sp-type="Enum" sp-enum-index="1">Bold</u:property>
+                  <u:property name="m_HorizontalAlignment" type="System.String" sp-name="Horizontal Alignment" sp-type="Enum" sp-enum-index="0">Left</u:property>
+                  <u:property name="m_VerticalAlignment" type="System.String" sp-name="Vertical Alignment" sp-type="Enum" sp-enum-index="0">Top</u:property>
+                  <u:property name="m_textAlignment" type="System.String" sp-name="Text Alignment" sp-type="Enum" sp-enum-index="36">Converted</u:property>
+                  <u:property name="m_characterSpacing" type="System.Single" sp-name="Character Spacing">0</u:property>
+                  <u:property name="m_wordSpacing" type="System.Single" sp-name="Word Spacing">0</u:property>
+                  <u:property name="m_lineSpacing" type="System.Single" sp-name="Line Spacing">0</u:property>
+                  <u:property name="m_lineSpacingMax" type="System.Single" sp-name="Line Spacing Max">0</u:property>
+                  <u:property name="m_paragraphSpacing" type="System.Single" sp-name="Paragraph Spacing">0</u:property>
+                  <u:property name="m_charWidthMaxAdj" type="System.Single" sp-name="Char Width Max Adj">0</u:property>
+                  <u:property name="m_enableWordWrapping" type="System.Boolean" sp-name="Enable Word Wrapping">True</u:property>
+                  <u:property name="m_wordWrappingRatios" type="System.Single" sp-name="Word Wrapping Ratios">0.4</u:property>
+                  <u:property name="m_overflowMode" type="System.String" sp-name="Overflow Mode" sp-type="Enum" sp-enum-index="0">Overflow</u:property>
+                  <u:property name="m_enableKerning" type="System.Boolean" sp-name="Enable Kerning">True</u:property>
+                  <u:property name="m_enableExtraPadding" type="System.Boolean" sp-name="Enable Extra Padding">False</u:property>
+                  <u:property name="checkPaddingRequired" type="System.Boolean" sp-name="Check Padding Required">False</u:property>
+                  <u:property name="m_isRichText" type="System.Boolean" sp-name="Is Rich Text">True</u:property>
+                  <u:property name="m_parseCtrlCharacters" type="System.Boolean" sp-name="Parse Ctrl Characters">True</u:property>
+                  <u:property name="m_isOrthographic" type="System.Boolean" sp-name="Is Orthographic">True</u:property>
+                  <u:property name="m_isCullingEnabled" type="System.Boolean" sp-name="Is Culling Enabled">False</u:property>
+                  <u:property name="m_horizontalMapping" type="System.String" sp-name="Horizontal Mapping" sp-type="Enum" sp-enum-index="0">Character</u:property>
+                  <u:property name="m_verticalMapping" type="System.String" sp-name="Vertical Mapping" sp-type="Enum" sp-enum-index="0">Character</u:property>
+                  <u:property name="m_uvLineOffset" type="System.Single" sp-name="Uv Line Offset">0</u:property>
+                  <u:property name="m_geometrySortingOrder" type="System.String" sp-name="Geometry Sorting Order" sp-type="Enum" sp-enum-index="0">Normal</u:property>
+                  <u:property name="m_IsTextObjectScaleStatic" type="System.Boolean" sp-name="Is Text Object Scale Static">False</u:property>
+                  <u:property name="m_VertexBufferAutoSizeReduction" type="System.Boolean" sp-name="Vertex Buffer Auto Size Reduction">False</u:property>
+                  <u:property name="m_useMaxVisibleDescender" type="System.Boolean" sp-name="Use Max Visible Descender">True</u:property>
+                  <u:property name="m_pageToDisplay" type="System.Int32" sp-name="Page To Display">1</u:property>
+                  <u:property name="m_margin" type="UnityEngine.Vector4" sp-name="Margin">
+                    <u:Vector4 name="m_margin">
+                      <u:w>0</u:w>
+                      <u:x>0</u:x>
+                      <u:y>0</u:y>
+                      <u:z>0</u:z>
+                    </u:Vector4>
+                  </u:property>
+                  <u:property name="m_isUsingLegacyAnimationComponent" type="System.Boolean" sp-name="Is Using Legacy Animation Component">False</u:property>
+                  <u:property name="m_isVolumetricText" type="System.Boolean" sp-name="Is Volumetric Text">False</u:property>
+                  <u:property name="m_hasFontAssetChanged" type="System.Boolean" sp-name="Has Font Asset Changed">False</u:property>
+                  <u:property name="m_maskOffset" type="UnityEngine.Vector4" sp-name="Mask Offset">
+                    <u:Vector4 name="m_maskOffset">
+                      <u:w>0</u:w>
+                      <u:x>0</u:x>
+                      <u:y>0</u:y>
+                      <u:z>0</u:z>
+                    </u:Vector4>
+                  </u:property>
+                </u:properties>
+              </u:MonoBehaviour>
+            </u:components>
+          </u:GameObject>
+          <u:GameObject name="GoalsContainer" tag="Untagged" id="0x00005D70" layer="5" activeInHierarchy="True" isStatic="False">
+            <u:RectTransform id="0x00005D72">
+              <u:referenced-by component-id="0x00005D84" property-name="goalsContainer">GameManager -» u:MonoBehaviour(UIManager) •-» goalsContainer</u:referenced-by>
+              <u:Vector3 name="pos">
+                <u:x>0</u:x>
+                <u:y>0</u:y>
+                <u:z>0</u:z>
+              </u:Vector3>
+              <u:Vector2 name="anchorMin">
+                <u:x>0.5</u:x>
+                <u:y>0.5</u:y>
+              </u:Vector2>
+              <u:Vector2 name="anchorMax">
+                <u:x>0.5</u:x>
+                <u:y>0.5</u:y>
+              </u:Vector2>
+              <u:Vector2 name="pivot">
+                <u:x>0.5</u:x>
+                <u:y>0.5</u:y>
+              </u:Vector2>
+              <u:Vector3 name="rotation">
+                <u:x>0</u:x>
+                <u:y>0</u:y>
+                <u:z>0</u:z>
+              </u:Vector3>
+              <u:Vector3 name="scale">
+                <u:x>1</u:x>
+                <u:y>1</u:y>
+                <u:z>1</u:z>
+              </u:Vector3>
+            </u:RectTransform>
+            <u:components>
+              <u:MonoBehaviour type="UnityEngine.UI.HorizontalLayoutGroup" id="0x00005D74" enabled="True" isActiveAndEnabled="True">
+                <u:extends>
+                  <u:superclass>UnityEngine.UI.HorizontalOrVerticalLayoutGroup</u:superclass>
+                  <u:superclass>UnityEngine.UI.LayoutGroup</u:superclass>
+                  <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+                </u:extends>
+                <u:implements>
+                  <u:interface>UnityEngine.UI.ILayoutGroup</u:interface>
+                  <u:interface>UnityEngine.UI.ILayoutElement</u:interface>
+                  <u:interface>UnityEngine.UI.ILayoutController</u:interface>
+                </u:implements>
+                <u:properties>
+                  <u:property name="m_Padding" type="scenedump.UnknownType" sp-name="Padding" sp-type="Generic">«@ToDo:unknown-type[Generic]»</u:property>
+                  <u:property name="m_ChildAlignment" type="System.String" sp-name="Child Alignment" sp-type="Enum" sp-enum-index="4">Middle Center</u:property>
+                  <u:property name="m_Spacing" type="System.Single" sp-name="Spacing">20</u:property>
+                  <u:property name="m_ChildForceExpandWidth" type="System.Boolean" sp-name="Child Force Expand Width">False</u:property>
+                  <u:property name="m_ChildForceExpandHeight" type="System.Boolean" sp-name="Child Force Expand Height">False</u:property>
+                  <u:property name="m_ChildControlWidth" type="System.Boolean" sp-name="Child Control Width">False</u:property>
+                  <u:property name="m_ChildControlHeight" type="System.Boolean" sp-name="Child Control Height">False</u:property>
+                  <u:property name="m_ChildScaleWidth" type="System.Boolean" sp-name="Child Scale Width">False</u:property>
+                  <u:property name="m_ChildScaleHeight" type="System.Boolean" sp-name="Child Scale Height">False</u:property>
+                  <u:property name="m_ReverseArrangement" type="System.Boolean" sp-name="Reverse Arrangement">False</u:property>
+                </u:properties>
+              </u:MonoBehaviour>
+            </u:components>
+          </u:GameObject>
+        </u:gameobjects>
+      </u:GameObject>
+      <u:GameObject name="BottomUI" tag="Untagged" id="0x00005D76" layer="5" activeInHierarchy="True" isStatic="False">
+        <u:RectTransform id="0x00005D78">
+          <u:Vector3 name="pos">
+            <u:x>0</u:x>
+            <u:y>150</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector2 name="anchorMin">
+            <u:x>0</u:x>
+            <u:y>0</u:y>
+          </u:Vector2>
+          <u:Vector2 name="anchorMax">
+            <u:x>1</u:x>
+            <u:y>0</u:y>
+          </u:Vector2>
+          <u:Vector2 name="pivot">
+            <u:x>0.5</u:x>
+            <u:y>0.5</u:y>
+          </u:Vector2>
+          <u:Vector3 name="rotation">
+            <u:x>0</u:x>
+            <u:y>0</u:y>
+            <u:z>0</u:z>
+          </u:Vector3>
+          <u:Vector3 name="scale">
+            <u:x>1</u:x>
+            <u:y>1</u:y>
+            <u:z>1</u:z>
+          </u:Vector3>
+        </u:RectTransform>
+        <u:components>
+          <u:Component type="UnityEngine.CanvasRenderer" id="0x00005D7C">
+            <u:properties>
+              <u:property name="m_CullTransparentMesh" type="System.Boolean" sp-name="Cull Transparent Mesh">True</u:property>
+            </u:properties>
+          </u:Component>
+          <u:MonoBehaviour type="UnityEngine.UI.Image" id="0x00005D7A" enabled="True" isActiveAndEnabled="True">
+            <u:extends>
+              <u:superclass>UnityEngine.UI.MaskableGraphic</u:superclass>
+              <u:superclass>UnityEngine.UI.Graphic</u:superclass>
+              <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+            </u:extends>
+            <u:implements>
+              <u:interface>UnityEngine.UI.IMaterialModifier</u:interface>
+              <u:interface>UnityEngine.UI.IMaskable</u:interface>
+              <u:interface>UnityEngine.ICanvasRaycastFilter</u:interface>
+              <u:interface>UnityEngine.ISerializationCallbackReceiver</u:interface>
+              <u:interface>UnityEngine.UI.ICanvasElement</u:interface>
+              <u:interface>UnityEngine.UI.ILayoutElement</u:interface>
+              <u:interface>UnityEngine.UI.IClippable</u:interface>
+            </u:implements>
+            <u:properties>
+              <u:property name="m_Color" type="UnityEngine.Color" sp-name="Color">
+                <u:Color name="m_Color">
+                  <u:r>1</u:r>
+                  <u:g>1</u:g>
+                  <u:b>1</u:b>
+                  <u:a>1</u:a>
+                </u:Color>
+              </u:property>
+              <u:property name="m_RaycastTarget" type="System.Boolean" sp-name="Raycast Target">True</u:property>
+              <u:property name="m_RaycastPadding" type="UnityEngine.Vector4" sp-name="Raycast Padding">
+                <u:Vector4 name="m_RaycastPadding">
+                  <u:w>0</u:w>
+                  <u:x>0</u:x>
+                  <u:y>0</u:y>
+                  <u:z>0</u:z>
+                </u:Vector4>
+              </u:property>
+              <u:property name="m_Maskable" type="System.Boolean" sp-name="Maskable">True</u:property>
+              <u:property name="m_OnCullStateChanged" type="scenedump.UnknownType" sp-name="On Cull State Changed" sp-type="Generic">«@ToDo:unknown-type[Generic]»</u:property>
+              <u:property name="m_Sprite" type="UnityEngine.Sprite" sp-name="Sprite" sp-type="ObjectReference" target-id="0x00005D9C">bottom_ui (UnityEngine.Sprite)</u:property>
+              <u:property name="m_Type" type="System.String" sp-name="Type" sp-type="Enum" sp-enum-index="0">Simple</u:property>
+              <u:property name="m_PreserveAspect" type="System.Boolean" sp-name="Preserve Aspect">False</u:property>
+              <u:property name="m_FillCenter" type="System.Boolean" sp-name="Fill Center">True</u:property>
+              <u:property name="m_FillMethod" type="System.String" sp-name="Fill Method" sp-type="Enum" sp-enum-index="4">Radial 360</u:property>
+              <u:property name="m_FillAmount" type="System.Single" sp-name="Fill Amount">1</u:property>
+              <u:property name="m_FillClockwise" type="System.Boolean" sp-name="Fill Clockwise">True</u:property>
+              <u:property name="m_FillOrigin" type="System.Int32" sp-name="Fill Origin">0</u:property>
+              <u:property name="m_UseSpriteMesh" type="System.Boolean" sp-name="Use Sprite Mesh">False</u:property>
+              <u:property name="m_PixelsPerUnitMultiplier" type="System.Single" sp-name="Pixels Per Unit Multiplier">1</u:property>
+            </u:properties>
+          </u:MonoBehaviour>
+        </u:components>
+      </u:GameObject>
+    </u:gameobjects>
+  </u:GameObject>
+  <u:GameObject name="EventSystem" tag="Untagged" id="0x00005D5E" layer="0" activeInHierarchy="True" isStatic="False">
+    <u:Transform id="0x00005D64">
+      <u:Vector3 name="position">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="rotation">
+        <u:x>0</u:x>
+        <u:y>0</u:y>
+        <u:z>0</u:z>
+      </u:Vector3>
+      <u:Vector3 name="scale">
+        <u:x>1</u:x>
+        <u:y>1</u:y>
+        <u:z>1</u:z>
+      </u:Vector3>
+    </u:Transform>
+    <u:components>
+      <u:MonoBehaviour type="UnityEngine.EventSystems.EventSystem" id="0x00005D62" enabled="True" isActiveAndEnabled="True">
+        <u:extends>
+          <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+        </u:extends>
+        <u:properties>
+          <u:property name="m_sendNavigationEvents" type="System.Boolean" sp-name="Send Navigation Events">True</u:property>
+          <u:property name="m_DragThreshold" type="System.Int32" sp-name="Drag Threshold">10</u:property>
+        </u:properties>
+      </u:MonoBehaviour>
+      <u:MonoBehaviour type="UnityEngine.EventSystems.StandaloneInputModule" id="0x00005D60" enabled="True" isActiveAndEnabled="True">
+        <u:extends>
+          <u:superclass>UnityEngine.EventSystems.PointerInputModule</u:superclass>
+          <u:superclass>UnityEngine.EventSystems.BaseInputModule</u:superclass>
+          <u:superclass>UnityEngine.EventSystems.UIBehaviour</u:superclass>
+        </u:extends>
+        <u:properties>
+          <u:property name="m_SendPointerHoverToParent" type="System.Boolean" sp-name="Send Pointer Hover To Parent">True</u:property>
+          <u:property name="m_HorizontalAxis" type="System.String" sp-name="Horizontal Axis">Horizontal</u:property>
+          <u:property name="m_VerticalAxis" type="System.String" sp-name="Vertical Axis">Vertical</u:property>
+          <u:property name="m_SubmitButton" type="System.String" sp-name="Submit Button">Submit</u:property>
+          <u:property name="m_CancelButton" type="System.String" sp-name="Cancel Button">Cancel</u:property>
+          <u:property name="m_InputActionsPerSecond" type="System.Single" sp-name="Input Actions Per Second">10</u:property>
+          <u:property name="m_RepeatDelay" type="System.Single" sp-name="Repeat Delay">0.5</u:property>
+        </u:properties>
+      </u:MonoBehaviour>
+    </u:components>
+  </u:GameObject>
+  <u:references />
+</u:Scene>
