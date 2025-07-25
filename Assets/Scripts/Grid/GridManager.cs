@@ -6,11 +6,12 @@ public class GridManager : MonoBehaviour
 {
     [Header("Grid Setup")]
     public Transform gridParent;
-    public GameObject cubePrefab; // This should be assigned in inspector
+    public GameObject cubePrefab;
 
     private GridCell[,] grid;
     private GameConfig config;
     private Camera mainCamera;
+    private bool isProcessingMatches = false; // Prevent multiple simultaneous matches
 
     public int Width => config.gridWidth;
     public int Height => config.gridHeight;
@@ -19,7 +20,6 @@ public class GridManager : MonoBehaviour
     {
         mainCamera = Camera.main;
 
-        // Create cube prefab if not assigned
         if (cubePrefab == null)
         {
             CreateCubePrefab();
@@ -28,24 +28,18 @@ public class GridManager : MonoBehaviour
 
     void CreateCubePrefab()
     {
-        // Create prefab programmatically
         cubePrefab = new GameObject("CubePrefab");
 
-        // Add SpriteRenderer
         SpriteRenderer sr = cubePrefab.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        sr.sortingOrder = 5; // Match the Initialize method
-        sr.color = new Color(1f, 1f, 1f, 1f); // Full opacity
-        sr.material = new Material(Shader.Find("Sprites/Default")); // Ensure proper material
+        sr.sortingOrder = 5;
+        sr.color = new Color(1f, 1f, 1f, 1f);
+        sr.material = new Material(Shader.Find("Sprites/Default"));
 
-        // Add BoxCollider2D
         BoxCollider2D collider = cubePrefab.AddComponent<BoxCollider2D>();
         collider.size = Vector2.one;
 
-        // Add CubeController
         cubePrefab.AddComponent<CubeController>();
-
-        // Don't make it a child of anything - keep it as a prefab reference
         cubePrefab.SetActive(false);
         DontDestroyOnLoad(cubePrefab);
     }
@@ -56,7 +50,7 @@ public class GridManager : MonoBehaviour
 
         if (config == null)
         {
-            Debug.LogError("GameConfig is null! Make sure it's assigned in GameManager.");
+            Debug.LogError("GameConfig is null!");
             return;
         }
 
@@ -72,10 +66,11 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Create grid array
+        // Reset processing flag
+        isProcessingMatches = false;
+
         grid = new GridCell[Width, Height];
 
-        // Initialize grid cells
         for (int x = 0; x < Width; x++)
         {
             for (int y = 0; y < Height; y++)
@@ -84,24 +79,19 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Position camera and grid
         SetupCameraAndGrid();
-
-        // Fill initial grid
         FillInitialGrid();
     }
 
     void SetupCameraAndGrid()
     {
-        // Calculate grid bounds
         float totalWidth = Width * config.cellSize + (Width - 1) * config.gridSpacing;
         float totalHeight = Height * config.cellSize + (Height - 1) * config.gridSpacing;
 
-        // Position grid in the center of the screen, slightly above center to account for UI
         Vector3 gridOffset = new Vector3(
             -totalWidth * 0.5f + config.cellSize * 0.5f,
-            -totalHeight * 0.5f + config.cellSize * 0.5f + 1f, // Offset up slightly
-            0 // Keep at Z=0 for proper layering
+            -totalHeight * 0.5f + config.cellSize * 0.5f + 1f,
+            0
         );
 
         if (gridParent != null)
@@ -109,46 +99,9 @@ public class GridManager : MonoBehaviour
             gridParent.position = gridOffset;
         }
 
-        // Adjust camera to fit the game area
         float requiredSize = Mathf.Max(totalHeight * 0.8f, totalWidth * 0.6f / mainCamera.aspect);
         mainCamera.orthographicSize = requiredSize;
-
-        // Ensure camera is positioned correctly
-        mainCamera.transform.position = new Vector3(0, 1f, -10f); // Slightly up to match grid offset
-
-        Debug.Log(
-            $"Grid size: {Width}x{Height}, Camera size: {requiredSize}, Grid position: {gridOffset}"
-        );
-    }
-
-    void Update()
-    {
-        // Temporary debug - remove after fixing
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            DebugGridState();
-        }
-    }
-
-    void DebugGridState()
-    {
-        Debug.Log($"Grid Parent Position: {gridParent.position}");
-        Debug.Log($"Camera Position: {mainCamera.transform.position}");
-        Debug.Log($"Camera Size: {mainCamera.orthographicSize}");
-
-        // Count visible cubes
-        int cubeCount = 0;
-        foreach (Transform child in gridParent)
-        {
-            if (child.gameObject.activeInHierarchy)
-            {
-                cubeCount++;
-                Debug.Log(
-                    $"Cube at: {child.position}, Active: {child.gameObject.activeInHierarchy}"
-                );
-            }
-        }
-        Debug.Log($"Total active cubes: {cubeCount}");
+        mainCamera.transform.position = new Vector3(0, 1f, -10f);
     }
 
     void FillInitialGrid()
@@ -160,31 +113,21 @@ public class GridManager : MonoBehaviour
                 CreateRandomCube(x, y);
             }
         }
-
-        Debug.Log($"Created {Width * Height} cubes");
     }
 
     void CreateRandomCube(int x, int y)
     {
-        if (cubePrefab == null)
+        if (cubePrefab == null || config.cubeSprites == null || config.cubeSprites.Length == 0)
         {
-            Debug.LogError("CubePrefab is not assigned!");
+            Debug.LogError("Cannot create cube - missing prefab or sprites!");
             return;
         }
 
-        if (config.cubeSprites == null || config.cubeSprites.Length == 0)
-        {
-            Debug.LogError("No cube sprites assigned in GameConfig!");
-            return;
-        }
-
-        // Instantiate cube
         GameObject cubeObj = Instantiate(cubePrefab, gridParent);
-        cubeObj.SetActive(true); // Make sure it's active
+        cubeObj.SetActive(true);
         cubeObj.name = $"Cube_{x}_{y}";
 
         CubeController cube = cubeObj.GetComponent<CubeController>();
-
         if (cube == null)
         {
             Debug.LogError("CubePrefab doesn't have CubeController component!");
@@ -194,11 +137,11 @@ public class GridManager : MonoBehaviour
         int randomColorIndex = Random.Range(0, config.cubeSprites.Length);
         cube.Initialize(randomColorIndex, config.cubeSprites[randomColorIndex]);
 
-        // Set world position
         Vector3 worldPos = GridToWorldPosition(x, y);
         cube.transform.position = worldPos;
 
-        // Set in grid
+        // CRITICAL: Set grid position and update grid reference
+        cube.SetGridPosition(new Vector2Int(x, y));
         grid[x, y].SetCube(cube);
     }
 
@@ -209,7 +152,6 @@ public class GridManager : MonoBehaviour
         return gridParent.position + new Vector3(worldX, worldY, 0);
     }
 
-    // ... rest of your methods remain the same
     public Vector2Int WorldToGridPosition(Vector3 worldPos)
     {
         Vector3 localPos = worldPos - gridParent.position;
@@ -228,7 +170,7 @@ public class GridManager : MonoBehaviour
     public List<GridCell> FindMatches(int x, int y)
     {
         GridCell startCell = GetCell(x, y);
-        if (startCell == null || startCell.isEmpty)
+        if (startCell == null || !startCell.hasCube)
             return new List<GridCell>();
 
         List<GridCell> matches = new List<GridCell>();
@@ -251,13 +193,12 @@ public class GridManager : MonoBehaviour
             return;
 
         GridCell cell = GetCell(x, y);
-        if (cell == null || cell.isEmpty || cell.cube.ColorIndex != targetColor)
+        if (cell == null || !cell.hasCube || cell.cube.ColorIndex != targetColor)
             return;
 
         visited.Add(new Vector2Int(x, y));
         matches.Add(cell);
 
-        // Check 4 directions (horizontal and vertical only)
         FloodFillMatches(x + 1, y, targetColor, matches, visited);
         FloodFillMatches(x - 1, y, targetColor, matches, visited);
         FloodFillMatches(x, y + 1, targetColor, matches, visited);
@@ -266,37 +207,141 @@ public class GridManager : MonoBehaviour
 
     public void HandleCubeClick(int x, int y)
     {
-        if (!GameManager.Instance.gameActive)
+        if (!GameManager.Instance.gameActive || isProcessingMatches)
+        {
+            Debug.Log(
+                $"Click ignored - Game active: {GameManager.Instance.gameActive}, Processing: {isProcessingMatches}"
+            );
+            return;
+        }
+
+        GridCell clickedCell = GetCell(x, y);
+        if (clickedCell == null)
             return;
 
-        List<GridCell> matches = FindMatches(x, y);
-        if (matches.Count > 0)
+        // If clicking on a rocket, let the rocket handle it
+        if (clickedCell.hasRocket)
         {
-            if (GameManager.Instance.TryMakeMove())
+            clickedCell.rocket.ActivateRocket();
+            return;
+        }
+
+        // Otherwise handle cube matching
+        if (clickedCell.hasCube)
+        {
+            Debug.Log($"Cube clicked at ({x}, {y})");
+
+            List<GridCell> matches = FindMatches(x, y);
+            if (matches.Count > 0)
             {
-                StartCoroutine(ProcessMatches(matches, new Vector2Int(x, y)));
+                Debug.Log($"Found {matches.Count} matches");
+                if (GameManager.Instance.TryMakeMove())
+                {
+                    StartCoroutine(ProcessMatches(matches, new Vector2Int(x, y)));
+                }
+            }
+            else
+            {
+                Debug.Log("No matches found");
             }
         }
     }
 
+    public IEnumerator ProcessRocketDestruction()
+    {
+        Debug.Log("Processing rocket destruction - applying gravity and filling");
+
+        // Apply gravity multiple times to ensure all cubes fall properly
+        yield return StartCoroutine(ApplyGravityCompletely());
+
+        // Fill empty spaces
+        yield return StartCoroutine(FillEmptySpaces());
+
+        // Update all positions to ensure everything is correct
+        UpdateAllCubePositions();
+
+        Debug.Log("Rocket destruction processing complete");
+    }
+
+    IEnumerator ApplyGravityCompletely()
+    {
+        bool cubesMoved = true;
+        int iterations = 0;
+        int maxIterations = Height; // Prevent infinite loops
+
+        while (cubesMoved && iterations < maxIterations)
+        {
+            cubesMoved = false;
+            iterations++;
+
+            for (int x = 0; x < Width; x++)
+            {
+                // Process each column from bottom to top
+                for (int y = 0; y < Height - 1; y++)
+                {
+                    GridCell currentCell = grid[x, y];
+
+                    // Skip if cell already has content or has a rocket
+                    if (!currentCell.isEmpty || currentCell.hasRocket)
+                        continue;
+
+                    // Find the nearest cube above to fall down
+                    for (int yAbove = y + 1; yAbove < Height; yAbove++)
+                    {
+                        GridCell aboveCell = grid[x, yAbove];
+                        if (aboveCell.hasCube)
+                        {
+                            // Move cube down
+                            currentCell.SetCube(aboveCell.cube);
+                            aboveCell.ClearCube();
+
+                            // Animate cube falling with faster speed for rocket aftermath
+                            if (currentCell.cube != null)
+                            {
+                                StartCoroutine(
+                                    AnimateCubeFallFast(currentCell.cube, GridToWorldPosition(x, y))
+                                );
+                            }
+
+                            cubesMoved = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (cubesMoved)
+            {
+                // Shorter wait time for faster response
+                yield return new WaitForSeconds(0.05f);
+            }
+        }
+
+        // Wait for animations to complete
+        yield return new WaitForSeconds(0.2f);
+
+        Debug.Log($"Gravity applied completely in {iterations} iterations");
+    }
+
     IEnumerator ProcessMatches(List<GridCell> matches, Vector2Int clickPosition)
     {
-        // Collect cubes for goals
+        isProcessingMatches = true;
+
         int colorIndex = matches[0].cube.ColorIndex;
         GameManager.Instance.CollectCube(colorIndex, matches.Count);
 
-        // Check for rocket creation
         bool shouldCreateRocket = matches.Count >= config.rocketTriggerSize;
 
-        // Explode cubes with proper effects
+        // Store rocket position before destroying cubes
+        Vector3 rocketWorldPosition = GridToWorldPosition(clickPosition.x, clickPosition.y);
+
+        // Explode cubes with effects
         foreach (var cell in matches)
         {
             if (cell.cube != null)
             {
-                // Get the world position before destroying the cube
                 Vector3 explosionPosition = cell.cube.transform.position;
 
-                // Validate position before creating effect
                 if (!float.IsNaN(explosionPosition.x) && !float.IsNaN(explosionPosition.y))
                 {
                     GameManager.Instance.effectsManager.PlayExplosionEffect(
@@ -312,124 +357,210 @@ public class GridManager : MonoBehaviour
 
         GameManager.Instance.audioManager.PlayExplosionSound();
 
-        // Create rocket if needed
+        yield return new WaitForSeconds(config.explosionDuration);
+
+        // Create rocket AFTER clearing the cell but BEFORE gravity
         if (shouldCreateRocket)
         {
-            CreateRocket(clickPosition);
+            CreateRocket(clickPosition, rocketWorldPosition);
         }
-
-        yield return new WaitForSeconds(config.explosionDuration);
 
         // Apply gravity and fill grid
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
+
+        // CRITICAL: Update all cube positions after movement
+        UpdateAllCubePositions();
+
+        isProcessingMatches = false;
     }
 
-    void CreateRocket(Vector2Int position)
+    void CreateRocket(Vector2Int gridPosition, Vector3 worldPosition)
     {
-        // Random direction
         RocketController.RocketDirection direction =
             Random.Range(0, 2) == 0
                 ? RocketController.RocketDirection.Horizontal
                 : RocketController.RocketDirection.Vertical;
 
-        // Create rocket GameObject
         GameObject rocketObj = new GameObject("Rocket");
         rocketObj.transform.SetParent(gridParent);
 
-        // Add components
         SpriteRenderer sr = rocketObj.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = 6; // Above cubes
+
         BoxCollider2D col = rocketObj.AddComponent<BoxCollider2D>();
+        col.size = Vector2.one;
+
         RocketController rocket = rocketObj.AddComponent<RocketController>();
+        rocket.Initialize(direction, gridPosition);
 
-        // Initialize rocket
-        rocket.Initialize(direction, position);
+        // Position rocket at the exact world position
+        rocketObj.transform.position = worldPosition;
 
-        Debug.Log($"Created {direction} rocket at {position}");
+        // CRITICAL: Place rocket in grid system
+        GridCell cell = GetCell(gridPosition.x, gridPosition.y);
+        if (cell != null)
+        {
+            cell.SetRocket(rocket);
+        }
+
+        Debug.Log($"Created {direction} rocket at grid {gridPosition}, world {worldPosition}");
     }
 
-    public IEnumerator ApplyGravityAndFill()
+    // CRITICAL: This method ensures all cubes have correct grid positions
+    void UpdateAllCubePositions()
     {
-        yield return StartCoroutine(ApplyGravity());
-        yield return StartCoroutine(FillEmptySpaces());
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                GridCell cell = grid[x, y];
+
+                if (cell.hasCube && cell.cube != null)
+                {
+                    cell.cube.SetGridPosition(new Vector2Int(x, y));
+                    Vector3 correctPosition = GridToWorldPosition(x, y);
+                    cell.cube.transform.position = correctPosition;
+                }
+
+                if (cell.hasRocket && cell.rocket != null)
+                {
+                    cell.rocket.SetGridPosition(new Vector2Int(x, y));
+                    Vector3 correctPosition = GridToWorldPosition(x, y);
+                    cell.rocket.transform.position = correctPosition;
+                }
+            }
+        }
+        Debug.Log("Updated all cube and rocket positions");
     }
 
     IEnumerator ApplyGravity()
     {
-        bool cubesMoved = false;
+        bool cubesMoved = true;
 
-        // Process each column
-        for (int x = 0; x < Width; x++)
+        while (cubesMoved)
         {
-            // Move cubes down
-            for (int y = 0; y < Height - 1; y++)
+            cubesMoved = false;
+
+            for (int x = 0; x < Width; x++)
             {
-                GridCell currentCell = grid[x, y];
-                if (!currentCell.isEmpty)
-                    continue;
-
-                // Find cube above to fall down
-                for (int yAbove = y + 1; yAbove < Height; yAbove++)
+                for (int y = 0; y < Height - 1; y++)
                 {
-                    GridCell aboveCell = grid[x, yAbove];
-                    if (!aboveCell.isEmpty)
-                    {
-                        // Move cube down
-                        currentCell.SetCube(aboveCell.cube);
-                        aboveCell.ClearCube();
+                    GridCell currentCell = grid[x, y];
+                    // Skip if cell has a rocket
+                    if (!currentCell.isEmpty || currentCell.hasRocket)
+                        continue;
 
-                        // Animate cube falling
-                        StartCoroutine(
-                            AnimateCubeFall(currentCell.cube, GridToWorldPosition(x, y))
-                        );
-                        cubesMoved = true;
-                        break;
+                    // Find cube above to fall down
+                    for (int yAbove = y + 1; yAbove < Height; yAbove++)
+                    {
+                        GridCell aboveCell = grid[x, yAbove];
+                        if (aboveCell.hasCube)
+                        {
+                            // Move cube down
+                            currentCell.SetCube(aboveCell.cube);
+                            aboveCell.ClearCube();
+
+                            // Animate cube falling
+                            if (currentCell.cube != null)
+                            {
+                                StartCoroutine(
+                                    AnimateCubeFall(currentCell.cube, GridToWorldPosition(x, y))
+                                );
+                            }
+
+                            cubesMoved = true;
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        if (cubesMoved)
-        {
-            yield return new WaitForSeconds(config.cubeFallSpeed / 10f);
+            if (cubesMoved)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
         }
     }
 
     IEnumerator FillEmptySpaces()
     {
+        // Fill from top to bottom
         for (int x = 0; x < Width; x++)
         {
             for (int y = Height - 1; y >= 0; y--)
             {
                 GridCell cell = grid[x, y];
+                // Only fill if cell is completely empty (no cube AND no rocket)
                 if (cell.isEmpty)
                 {
                     CreateRandomCube(x, y);
 
                     // Animate new cube falling from above
-                    Vector3 startPos = GridToWorldPosition(x, Height);
-                    Vector3 endPos = GridToWorldPosition(x, y);
-                    cell.cube.transform.position = startPos;
-                    StartCoroutine(AnimateCubeFall(cell.cube, endPos));
+                    if (cell.hasCube && cell.cube != null)
+                    {
+                        Vector3 startPos = GridToWorldPosition(x, Height);
+                        Vector3 endPos = GridToWorldPosition(x, y);
+                        cell.cube.transform.position = startPos;
+                        StartCoroutine(AnimateCubeFall(cell.cube, endPos));
+                    }
                 }
             }
         }
 
-        yield return new WaitForSeconds(config.cubeFallSpeed / 10f);
+        yield return new WaitForSeconds(config.cubeFallSpeed / 5f);
     }
 
-    IEnumerator AnimateCubeFall(CubeController cube, Vector3 targetPosition)
+    IEnumerator AnimateCubeFallFast(CubeController cube, Vector3 targetPosition)
     {
+        if (cube == null)
+            yield break;
+
         Vector3 startPosition = cube.transform.position;
         float journey = 0f;
+        float speed = config.cubeFallSpeed * 2f; // Faster falling for rocket aftermath
 
-        while (journey <= 1f)
+        while (journey <= 1f && cube != null)
         {
-            journey = journey + Time.deltaTime * config.cubeFallSpeed;
+            journey += Time.deltaTime * speed;
             cube.transform.position = Vector3.Lerp(startPosition, targetPosition, journey);
             yield return null;
         }
 
-        cube.transform.position = targetPosition;
+        if (cube != null)
+        {
+            cube.transform.position = targetPosition;
+        }
+    }
+
+    IEnumerator AnimateCubeFall(CubeController cube, Vector3 targetPosition)
+    {
+        if (cube == null)
+            yield break;
+
+        Vector3 startPosition = cube.transform.position;
+        float journey = 0f;
+        float speed = config.cubeFallSpeed;
+
+        while (journey <= 1f && cube != null)
+        {
+            journey += Time.deltaTime * speed;
+            cube.transform.position = Vector3.Lerp(startPosition, targetPosition, journey);
+            yield return null;
+        }
+
+        if (cube != null)
+        {
+            cube.transform.position = targetPosition;
+        }
+    }
+
+    // Update this existing method to use the improved gravity
+    public IEnumerator ApplyGravityAndFill()
+    {
+        yield return StartCoroutine(ApplyGravityCompletely());
+        yield return StartCoroutine(FillEmptySpaces());
+        UpdateAllCubePositions();
     }
 }

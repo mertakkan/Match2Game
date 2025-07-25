@@ -19,28 +19,40 @@ public class CubeController : MonoBehaviour
         ColorIndex = colorIndex;
         spriteRenderer.sprite = cubeSprite;
 
-        // Ensure proper sorting - cubes should be visible above background
         spriteRenderer.sortingLayerName = "Default";
         spriteRenderer.sortingOrder = 5;
-
-        // Ensure the sprite renderer is properly configured with full opacity
-        spriteRenderer.color = new Color(1f, 1f, 1f, 1f); // Explicitly set alpha to 1
+        spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
         spriteRenderer.enabled = true;
 
-        // Ensure proper material
         if (spriteRenderer.material == null || spriteRenderer.material.name.Contains("Default"))
         {
             spriteRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        // Ensure collider is enabled and properly sized
+        if (cubeCollider != null)
+        {
+            cubeCollider.enabled = true;
+            cubeCollider.isTrigger = false;
+
+            if (cubeCollider is BoxCollider2D boxCollider)
+            {
+                boxCollider.size = Vector2.one;
+            }
         }
     }
 
     public void SetGridPosition(Vector2Int position)
     {
         GridPosition = position;
+        gameObject.name = $"Cube_{position.x}_{position.y}_{ColorIndex}";
     }
 
     void OnMouseDown()
     {
+        // Add debug info
+        Debug.Log($"Cube clicked: {gameObject.name} at grid position {GridPosition}");
+
         if (GridPosition.x >= 0 && GridPosition.y >= 0)
         {
             GridManager gridManager = FindObjectOfType<GridManager>();
@@ -48,12 +60,19 @@ public class CubeController : MonoBehaviour
             {
                 gridManager.HandleCubeClick(GridPosition.x, GridPosition.y);
             }
+            else
+            {
+                Debug.LogError("GridManager not found!");
+            }
+        }
+        else
+        {
+            Debug.LogError($"Invalid grid position: {GridPosition}");
         }
     }
 
     public void AnimateCollection(Vector3 targetPosition)
     {
-        // Move towards goal UI element
         StartCoroutine(AnimateToTarget(targetPosition));
     }
 
@@ -72,5 +91,24 @@ public class CubeController : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    // Add this for debugging
+    void OnMouseEnter()
+    {
+        // Optional: Add visual feedback when hovering
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(1.2f, 1.2f, 1.2f, 1f);
+        }
+    }
+
+    void OnMouseExit()
+    {
+        // Reset color
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+        }
     }
 }
