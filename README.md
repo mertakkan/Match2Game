@@ -1,53 +1,52 @@
-# Peak Mobile Case - Match 2 Oyunu
+# Peak Mobile Case - Match 2 Game
 
-Bu proje, Peak tarafından verilen "Mobile Case" çalışması kapsamında geliştirilmiş bir Match-2 oyunudur. Proje, Unity oyun motorunun **2021.3.18f1** versiyonu kullanılarak C# dili ile geliştirilmiştir.
+This repository contains a Match-2 game developed as part of the Peak Mobile Case study. The project was built using **Unity 2021.3.18f1** and the C# programming language.
 
-## 🚀 Genel Bakış
+## 🚀 Overview
 
-Oyuncuların temel amacı, aynı renkteki en az iki küpü eşleştirerek patlatmak ve bölüm hedeflerini (Goal) tamamlamaktır. Proje, referans videoda belirtilen tüm temel mekanikleri, UI gereksinimlerini ve özel obje (roket, balon, ördek) davranışlarını içermektedir.
+The core objective for the player is to match two or more adjacent cubes of the same color to clear them from the grid and complete level-specific goals. This project implements all the core mechanics, UI requirements, and special object behaviors (Rockets, Balloons, Ducks) outlined in the case study.
 
-## ✨ Özellikler
+## ✨ Features
 
-- **Dinamik Grid Yapısı**: Grid boyutu (genişlik ve yükseklik) `GameConfig` dosyası üzerinden kolayca değiştirilebilir ve dikdörtgen yapıyı destekler.
-- **Değiştirilebilir Seviye Ayarları**: Her seviye için hamle sayısı, başlangıç dizilimi ve hedefler (toplanacak küp, balon veya ördek sayısı) `GameConfig` üzerinden ayarlanabilir.
-- **Duyarlı UI (Responsive UI)**: UI elementleri, farklı ekran çözünürlüklerine uyum sağlayacak şekilde dinamik olarak konumlandırılmıştır.
-- **Temel Oyun Mekanikleri**:
-  - **Match**: Yan yana duran aynı renkteki en az iki küpün eşleşmesi.
-  - **Fill & Fall**: Patlayan küplerin yerine üstteki küplerin düşmesi (Fill) ve boş kalan yerlere yukarıdan yeni küplerin gelmesi (Fall).
-- **Özel Objeler ve Mekanikler**:
-  - **🚀 Roket**: 5 veya daha fazla küp eşleştirildiğinde, tıklandığı konumda rastgele yatay veya dikey bir roket oluşur. Roket aktive edildiğinde bulunduğu satır veya sütundaki tüm objeleri yok eder.
-  - **🎈 Balon**: Küplerle birlikte düşen bir engeldir. Yanındaki bir eşleşme patlatıldığında yok olur. Seviye hedeflerine eklenebilir.
-  - **🦆 Ördek**: Küplerle birlikte düşebilen bir objedir. Grid'in en alt satırına ulaştığında toplanır ve yok olur. Seviye hedeflerine eklenebilir.
-- **Efektler ve Animasyonlar**:
-  - Küp patlama, roket aktivasyonu ve hedef toplama anları için **parçacık (particle) ve ses efektleri** mevcuttur.
-  - Toplanan hedeflerin UI'daki hedefe doğru uçma animasyonu.
-  - Roketin hareket animasyonu.
-- **Dinamik Çerçeve**: Grid'in etrafındaki çerçeve, grid boyutuna göre dinamik olarak ölçeklenir.
+- **Dynamic Grid Structure**: The grid size (width and height) is fully configurable via the `GameConfig` file and supports rectangular layouts.
+- **Editable Level Settings**: The number of moves, initial cube layout, and level goals (number of cubes, balloons, or ducks to collect) can be easily adjusted from the `GameConfig` for each level.
+- **Responsive UI**: UI elements are dynamically anchored to support various screen resolutions and aspect ratios.
+- **Core Game Mechanics**:
+  - **Match**: Matching two or more adjacent cubes of the same color.
+  - **Fill & Fall**: When cubes are cleared, the cubes above them fall to fill the empty space (Fill), and new cubes are generated from the top to fill the remaining grid (Fall).
+- **Special Objects & Mechanics**:
+  - **🚀 Rocket**: Matching 5 or more cubes creates a rocket at the tapped position with a random horizontal or vertical orientation. When activated, the rocket clears its entire row or column.
+  - **🎈 Balloon**: An obstacle that falls with the cubes. It is destroyed when an adjacent match is made. Can be included as a level goal.
+  - **🦆 Duck**: An object that can fall with the cubes. It is collected and removed from the grid upon reaching the bottom row. Can be included as a level goal.
+- **Effects & Animations**:
+  - Includes **particle and sound effects** for cube explosions, rocket activations, and goal collection.
+  - Features animations for collected goals flying to the UI and for the rocket's movement.
+- **Dynamic Frame**: The border frame around the grid dynamically scales based on the grid's dimensions.
 
-## 🔧 Teknik Detaylar ve Mimari
+## 🔧 Technical Details & Architecture
 
-Proje, genişletilebilir ve temiz bir kod yapısı hedefiyle geliştirilmiştir. Ana bileşenler şunlardır:
+The project was developed with a focus on creating a clean, scalable, and extensible codebase. The main components are:
 
-- **GameManager**: Oyunun genel durumunu (hamle sayısı, hedefler, oyunun aktif olup olmadığı) yönetir. Diğer tüm manager'ları koordine eder.
-- **GridManager**: Grid oluşturma, küp yerleştirme, eşleşme bulma, yerçekimi uygulama ve özel obje (roket, balon, ördek) mekaniklerini yönetir.
-- **UIManager**: Hamle sayısı ve hedefler gibi UI elementlerini günceller, oyun sonu ekranlarını (kazanma/kaybetme) gösterir.
-- **AudioManager**: Oyun içi ses efektlerini (patlama, toplanma vb.) çalar.
-- **EffectsManager**: Patlama ve toplanma gibi anlar için parçacık efektlerini oluşturur ve yönetir.
-- **GameConfig (ScriptableObject)**: Oyunun tüm ayarlarının (grid boyutu, hamle sayısı, hedefler, sesler, görseller vb.) tutulduğu merkezi yapı. Bu dosya sayesinde koda dokunmadan oyunun dengesi ve seviye tasarımları kolayca değiştirilebilir.
-- **Geliştirilebilirlik**: Kod mimarisi, yeni mekaniklerin (örneğin yeni bir özel küp veya engel) sisteme kolayca entegre edilebilmesine olanak tanıyacak şekilde tasarlanmıştır. `GridCell` yapısı, hücrelere farklı obje türlerinin (küp, roket, balon, ördek) eklenebilmesini destekler.
+- **GameManager**: The central coordinator that manages the game state (moves, goals, active status) and orchestrates other managers.
+- **GridManager**: Handles grid creation, cube placement, match detection, gravity simulation, and the logic for all special objects (Rockets, Balloons, Ducks).
+- **UIManager**: Updates all UI elements, such as the move counter and goal progress, and displays the game-over screens (Win/Lose).
+- **AudioManager**: Plays all in-game sound effects (explosions, collections, etc.).
+- **EffectsManager**: Manages and spawns particle effects for explosions and other events.
+- **GameConfig (ScriptableObject)**: A central asset that holds all game settings (grid size, moves, goals, sprites, audio clips, etc.). This allows for easy game balancing and level design without changing a single line of code.
+- **Extensibility**: The architecture is designed to allow for easy integration of new mechanics. The `GridCell` class is structured to support various types of objects, making it simple to add new special items or obstacles.
 
-## ⚙️ Kurulum ve Çalıştırma
+## ⚙️ Setup & Running
 
-1.  Projeyi Unity Hub üzerinden açın. Projenin **Unity 2021.3.18f1** versiyonu ile geliştirildiğinden emin olun.
-2.  `Assets/Scenes` klasöründeki ana oyun sahnesini açın.
-3.  Unity Editor üzerinden **Play** butonuna basarak oyunu test edebilirsiniz.
-4.  **Build Settings** (File > Build Settings) menüsünden **iOS** veya **Android** platformunu seçerek projenin çıktısını alabilirsiniz.
+1.  Open the project in Unity Hub. Ensure you are using **Unity version 2021.3.18f1**.
+2.  Navigate to the `Assets/Scenes` folder and open the main game scene.
+3.  Press the **Play** button in the Unity Editor to run the game.
+4.  To create a build, go to **File > Build Settings** and select either **iOS** or **Android** as the target platform.
 
-## 🎮 Seviye Ayarlarını Değiştirme
+## 🎮 How to Change Level Settings
 
-Tüm oyun ve seviye ayarları `Assets/Resources` klasöründe bulunan **GameConfig** asset'i üzerinden değiştirilebilir:
+All game and level parameters can be modified through the **GameConfig** asset located in the `Assets/Resources` folder:
 
-- **Grid Settings**: Grid genişliği ve yüksekliği.
-- **Gameplay Settings**: Hamle sayısı, roket için gereken eşleşme sayısı, seviyedeki balon ve ördek sayısı.
-- **Level Goals**: Seviye hedeflerini (hangi renkten kaç küp, kaç balon, kaç ördek toplanacağı) buradan belirleyebilirsiniz.
-- **Sprites, AudioClips, vb.**: Oyun içi tüm görseller ve sesler bu dosya üzerinden atanabilir.
+- **Grid Settings**: Set the grid's width and height.
+- **Gameplay Settings**: Adjust the number of moves per level, the match size required to trigger a rocket, and the number of balloons and ducks in the level.
+- **Level Goals**: Define the level's objectives, such as how many cubes of a certain color, balloons, or ducks need to be collected.
+- **Sprites, AudioClips, etc.**: All visual and audio assets for the game can be assigned here.```
