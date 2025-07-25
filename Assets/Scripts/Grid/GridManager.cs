@@ -155,10 +155,10 @@ public class GridManager : MonoBehaviour
             return;
 
         List<Vector2Int> availableCells = new List<Vector2Int>();
-        // Prevent spawning in bottom row (y = 0) by starting from y = 1
+
         for (int x = 0; x < Width; x++)
         {
-            for (int y = 1; y < Height; y++) // Start from y = 1, not y = 0
+            for (int y = 1; y < Height; y++)
             {
                 if (grid[x, y].isEmpty || grid[x, y].hasCube)
                 {
@@ -413,8 +413,10 @@ public class GridManager : MonoBehaviour
         yield return new WaitForSeconds(config.explosionDuration);
 
         yield return StartCoroutine(ApplyGravity());
-        yield return StartCoroutine(FillEmptySpaces());
+
         CheckAndCollectBottomRowDucks();
+
+        yield return StartCoroutine(FillEmptySpaces());
 
         UpdateAllObjectPositions();
 
@@ -461,12 +463,11 @@ public class GridManager : MonoBehaviour
     {
         for (int x = 0; x < Width; x++)
         {
-            GridCell cell = grid[x, 0]; // Bottom row is y = 0
+            GridCell cell = grid[x, 0];
             if (cell != null && cell.hasDuck && cell.duck != null)
             {
-                // Collect the duck immediately
                 DuckController duck = cell.duck;
-                cell.ClearDuck(); // Clear from grid first to prevent double collection
+                cell.ClearDuck();
                 duck.CollectDuck();
             }
         }
@@ -560,9 +561,10 @@ public class GridManager : MonoBehaviour
         }
 
         yield return StartCoroutine(ApplyGravity());
-        yield return StartCoroutine(FillEmptySpaces());
 
         CheckAndCollectBottomRowDucks();
+
+        yield return StartCoroutine(FillEmptySpaces());
 
         UpdateAllObjectPositions();
 
