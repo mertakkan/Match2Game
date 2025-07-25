@@ -337,7 +337,8 @@ public class GridManager : MonoBehaviour
         if (clickedCell.hasCube)
         {
             List<GridCell> matches = FindMatches(x, y);
-            if (matches.Count > 0)
+
+            if (matches.Count >= config.minMatchSize)
             {
                 if (GameManager.Instance.TryMakeMove())
                 {
@@ -412,14 +413,26 @@ public class GridManager : MonoBehaviour
         GameManager.Instance.audioManager.PlayExplosionSound();
         yield return new WaitForSeconds(config.explosionDuration);
 
-        yield return StartCoroutine(ApplyGravity());
+        yield return StartCoroutine(HandlePostMoveLogic());
+    }
 
-        CheckAndCollectBottomRowDucks();
+    private IEnumerator HandlePostMoveLogic()
+    {
+        bool needsAnotherPass;
+        do
+        {
+            yield return StartCoroutine(ApplyGravity());
+
+            needsAnotherPass = CheckAndCollectBottomRowDucks();
+
+            if (needsAnotherPass)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+        } while (needsAnotherPass);
 
         yield return StartCoroutine(FillEmptySpaces());
-
         UpdateAllObjectPositions();
-
         isProcessingMatches = false;
     }
 
@@ -459,8 +472,9 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private void CheckAndCollectBottomRowDucks()
+    private bool CheckAndCollectBottomRowDucks()
     {
+        bool collectedAny = false;
         for (int x = 0; x < Width; x++)
         {
             GridCell cell = grid[x, 0];
@@ -469,8 +483,10 @@ public class GridManager : MonoBehaviour
                 DuckController duck = cell.duck;
                 cell.ClearDuck();
                 duck.CollectDuck();
+                collectedAny = true;
             }
         }
+        return collectedAny;
     }
 
     void CreateBalloon(int x, int y)
@@ -560,15 +576,7 @@ public class GridManager : MonoBehaviour
             CreateRocket(clickPosition, rocketWorldPosition);
         }
 
-        yield return StartCoroutine(ApplyGravity());
-
-        CheckAndCollectBottomRowDucks();
-
-        yield return StartCoroutine(FillEmptySpaces());
-
-        UpdateAllObjectPositions();
-
-        isProcessingMatches = false;
+        yield return StartCoroutine(HandlePostMoveLogic());
     }
 
     void CreateRocket(Vector2Int gridPosition, Vector3 worldPosition)
