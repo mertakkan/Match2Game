@@ -219,108 +219,92 @@ public class GridManager : MonoBehaviour
         if (clickedCell == null)
             return;
 
-        // If clicking on a rocket, let the rocket handle it
+        // Handle rocket click
         if (clickedCell.hasRocket)
         {
-            clickedCell.rocket.ActivateRocket();
+            if (GameManager.Instance.TryMakeMove())
+            {
+                StartCoroutine(ProcessRocketActivation(clickedCell));
+            }
             return;
         }
 
-        // Otherwise handle cube matching
+        // Handle cube click
         if (clickedCell.hasCube)
         {
-            Debug.Log($"Cube clicked at ({x}, {y})");
-
             List<GridCell> matches = FindMatches(x, y);
             if (matches.Count > 0)
             {
-                Debug.Log($"Found {matches.Count} matches");
                 if (GameManager.Instance.TryMakeMove())
                 {
                     StartCoroutine(ProcessMatches(matches, new Vector2Int(x, y)));
                 }
             }
-            else
-            {
-                Debug.Log("No matches found");
-            }
         }
     }
 
-    public IEnumerator ProcessRocketDestruction()
+    private IEnumerator ProcessRocketActivation(GridCell rocketCell)
     {
-        Debug.Log("Processing rocket destruction - applying gravity and filling");
+        isProcessingMatches = true;
 
-        // Apply gravity multiple times to ensure all cubes fall properly
-        yield return StartCoroutine(ApplyGravityCompletely());
+        RocketController rocket = rocketCell.rocket;
+        Vector2Int rocketGridPos = rocket.GridPosition;
 
-        // Fill empty spaces
-        yield return StartCoroutine(FillEmptySpaces());
+        // Clear the rocket from the grid model immediately
+        rocketCell.ClearRocket();
 
-        // Update all positions to ensure everything is correct
-        UpdateAllCubePositions();
+        List<Vector2Int> destroyPositions = new List<Vector2Int>();
 
-        Debug.Log("Rocket destruction processing complete");
-    }
-
-    IEnumerator ApplyGravityCompletely()
-    {
-        bool cubesMoved = true;
-        int iterations = 0;
-        int maxIterations = Height; // Prevent infinite loops
-
-        while (cubesMoved && iterations < maxIterations)
+        // Determine which cubes to destroy based on rocket direction
+        if (rocket.direction == RocketController.RocketDirection.Horizontal)
         {
-            cubesMoved = false;
-            iterations++;
-
             for (int x = 0; x < Width; x++)
             {
-                // Process each column from bottom to top
-                for (int y = 0; y < Height - 1; y++)
-                {
-                    GridCell currentCell = grid[x, y];
-
-                    // Skip if cell already has content or has a rocket
-                    if (!currentCell.isEmpty || currentCell.hasRocket)
-                        continue;
-
-                    // Find the nearest cube above to fall down
-                    for (int yAbove = y + 1; yAbove < Height; yAbove++)
-                    {
-                        GridCell aboveCell = grid[x, yAbove];
-                        if (aboveCell.hasCube)
-                        {
-                            // Move cube down
-                            currentCell.SetCube(aboveCell.cube);
-                            aboveCell.ClearCube();
-
-                            // Animate cube falling with faster speed for rocket aftermath
-                            if (currentCell.cube != null)
-                            {
-                                StartCoroutine(
-                                    AnimateCubeFallFast(currentCell.cube, GridToWorldPosition(x, y))
-                                );
-                            }
-
-                            cubesMoved = true;
-                            break;
-                        }
-                    }
-                }
+                destroyPositions.Add(new Vector2Int(x, rocketGridPos.y));
             }
-
-            if (cubesMoved)
+        }
+        else // Vertical
+        {
+            for (int y = 0; y < Height; y++)
             {
-                // Shorter wait time for faster response
-                yield return new WaitForSeconds(0.05f);
+                destroyPositions.Add(new Vector2Int(rocketGridPos.x, y));
             }
         }
 
-        // Wait for animations to complete
-        yield return new WaitForSeconds(0.2f);
+        // Destroy the rocket GameObject itself
+        GameManager.Instance.effectsManager.PlayExplosionEffect(rocket.transform.position);
+        Destroy(rocket.gameObject);
 
-        Debug.Log($"Gravity applied completely in {iterations} iterations");
+        // Destroy cubes and collect them
+        foreach (Vector2Int pos in destroyPositions)
+        {
+            GridCell cell = GetCell(pos.x, pos.y);
+            if (cell != null && cell.hasCube)
+            {
+                GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
+                GameManager.Instance.effectsManager.PlayExplosionEffect(
+                    cell.cube.transform.position,
+                    cell.cube.ColorIndex
+                );
+                Destroy(cell.cube.gameObject);
+                cell.ClearCube();
+            }
+        }
+
+        GameManager.Instance.audioManager.PlayExplosionSound();
+
+        // Wait for visual destruction to be perceived
+        yield return new WaitForSeconds(
+            config.explosionDuration > 0.2f ? config.explosionDuration : 0.2f
+        );
+
+        // Now, run the standard grid update sequence
+        yield return StartCoroutine(ApplyGravity());
+        yield return StartCoroutine(FillEmptySpaces());
+        UpdateAllCubePositions();
+
+        isProcessingMatches = false;
+        Debug.Log("Rocket activation processing complete.");
     }
 
     IEnumerator ProcessMatches(List<GridCell> matches, Vector2Int clickPosition)
@@ -512,28 +496,6 @@ public class GridManager : MonoBehaviour
         yield return new WaitForSeconds(config.cubeFallSpeed / 5f);
     }
 
-    IEnumerator AnimateCubeFallFast(CubeController cube, Vector3 targetPosition)
-    {
-        if (cube == null)
-            yield break;
-
-        Vector3 startPosition = cube.transform.position;
-        float journey = 0f;
-        float speed = config.cubeFallSpeed * 2f; // Faster falling for rocket aftermath
-
-        while (journey <= 1f && cube != null)
-        {
-            journey += Time.deltaTime * speed;
-            cube.transform.position = Vector3.Lerp(startPosition, targetPosition, journey);
-            yield return null;
-        }
-
-        if (cube != null)
-        {
-            cube.transform.position = targetPosition;
-        }
-    }
-
     IEnumerator AnimateCubeFall(CubeController cube, Vector3 targetPosition)
     {
         if (cube == null)
@@ -554,13 +516,5 @@ public class GridManager : MonoBehaviour
         {
             cube.transform.position = targetPosition;
         }
-    }
-
-    // Update this existing method to use the improved gravity
-    public IEnumerator ApplyGravityAndFill()
-    {
-        yield return StartCoroutine(ApplyGravityCompletely());
-        yield return StartCoroutine(FillEmptySpaces());
-        UpdateAllCubePositions();
     }
 }

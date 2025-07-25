@@ -40,7 +40,6 @@ public class RocketController : MonoBehaviour
         else
         {
             spriteRenderer.sprite = config.rocketVerticalSprite;
-            transform.rotation = Quaternion.Euler(0, 0, 90); // Rotate for vertical
         }
 
         // Set proper sorting and rendering
@@ -74,90 +73,11 @@ public class RocketController : MonoBehaviour
     {
         Debug.Log($"Rocket clicked: {gameObject.name} at {GridPosition}");
 
-        if (GameManager.Instance.gameActive)
+        if (gridManager != null)
         {
-            ActivateRocket();
+            // Delegate click handling to the central GridManager
+            gridManager.HandleCubeClick(GridPosition.x, GridPosition.y);
         }
-    }
-
-    public void ActivateRocket()
-    {
-        Debug.Log($"Activating rocket: {direction} at {GridPosition}");
-
-        if (GameManager.Instance.TryMakeMove())
-        {
-            StartCoroutine(FireRocket());
-        }
-    }
-
-    IEnumerator FireRocket()
-    {
-        // Clear rocket from grid first
-        GridCell rocketCell = gridManager.GetCell(GridPosition.x, GridPosition.y);
-        if (rocketCell != null)
-        {
-            rocketCell.ClearRocket();
-        }
-
-        List<Vector2Int> destroyPositions = new List<Vector2Int>();
-
-        // Determine which cubes to destroy
-        if (direction == RocketDirection.Horizontal)
-        {
-            // Destroy entire row
-            for (int x = 0; x < gridManager.Width; x++)
-            {
-                destroyPositions.Add(new Vector2Int(x, GridPosition.y));
-            }
-            Debug.Log($"Rocket destroying row {GridPosition.y}");
-        }
-        else
-        {
-            // Destroy entire column
-            for (int y = 0; y < gridManager.Height; y++)
-            {
-                destroyPositions.Add(new Vector2Int(GridPosition.x, y));
-            }
-            Debug.Log($"Rocket destroying column {GridPosition.x}");
-        }
-
-        // Destroy cubes and collect them
-        int totalDestroyed = 0;
-        foreach (Vector2Int pos in destroyPositions)
-        {
-            GridCell cell = gridManager.GetCell(pos.x, pos.y);
-            if (cell != null && cell.hasCube)
-            {
-                // Collect for goals
-                GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
-
-                // Play explosion effect
-                GameManager.Instance.effectsManager.PlayExplosionEffect(
-                    cell.cube.transform.position,
-                    cell.cube.ColorIndex
-                );
-
-                // Destroy cube
-                Destroy(cell.cube.gameObject);
-                cell.ClearCube();
-                totalDestroyed++;
-            }
-        }
-
-        Debug.Log($"Rocket destroyed {totalDestroyed} cubes");
-
-        // Play sound and effects
-        GameManager.Instance.audioManager.PlayExplosionSound();
-        GameManager.Instance.effectsManager.PlayExplosionEffect(transform.position);
-
-        // Destroy rocket
-        Destroy(gameObject);
-
-        // Wait a bit for destruction to complete
-        yield return new WaitForSeconds(0.2f);
-
-        // CRITICAL: Trigger immediate grid update through GridManager
-        yield return StartCoroutine(gridManager.ProcessRocketDestruction());
     }
 
     // Visual feedback on hover

@@ -837,108 +837,92 @@ public class GridManager : MonoBehaviour
         if (clickedCell == null)
             return;
 
-        // If clicking on a rocket, let the rocket handle it
+        // Handle rocket click
         if (clickedCell.hasRocket)
         {
-            clickedCell.rocket.ActivateRocket();
+            if (GameManager.Instance.TryMakeMove())
+            {
+                StartCoroutine(ProcessRocketActivation(clickedCell));
+            }
             return;
         }
 
-        // Otherwise handle cube matching
+        // Handle cube click
         if (clickedCell.hasCube)
         {
-            Debug.Log($"Cube clicked at ({x}, {y})");
-
             List<GridCell> matches = FindMatches(x, y);
             if (matches.Count > 0)
             {
-                Debug.Log($"Found {matches.Count} matches");
                 if (GameManager.Instance.TryMakeMove())
                 {
                     StartCoroutine(ProcessMatches(matches, new Vector2Int(x, y)));
                 }
             }
-            else
-            {
-                Debug.Log("No matches found");
-            }
         }
     }
 
-    public IEnumerator ProcessRocketDestruction()
+    private IEnumerator ProcessRocketActivation(GridCell rocketCell)
     {
-        Debug.Log("Processing rocket destruction - applying gravity and filling");
+        isProcessingMatches = true;
 
-        // Apply gravity multiple times to ensure all cubes fall properly
-        yield return StartCoroutine(ApplyGravityCompletely());
+        RocketController rocket = rocketCell.rocket;
+        Vector2Int rocketGridPos = rocket.GridPosition;
 
-        // Fill empty spaces
-        yield return StartCoroutine(FillEmptySpaces());
+        // Clear the rocket from the grid model immediately
+        rocketCell.ClearRocket();
 
-        // Update all positions to ensure everything is correct
-        UpdateAllCubePositions();
+        List<Vector2Int> destroyPositions = new List<Vector2Int>();
 
-        Debug.Log("Rocket destruction processing complete");
-    }
-
-    IEnumerator ApplyGravityCompletely()
-    {
-        bool cubesMoved = true;
-        int iterations = 0;
-        int maxIterations = Height; // Prevent infinite loops
-
-        while (cubesMoved && iterations < maxIterations)
+        // Determine which cubes to destroy based on rocket direction
+        if (rocket.direction == RocketController.RocketDirection.Horizontal)
         {
-            cubesMoved = false;
-            iterations++;
-
             for (int x = 0; x < Width; x++)
             {
-                // Process each column from bottom to top
-                for (int y = 0; y < Height - 1; y++)
-                {
-                    GridCell currentCell = grid[x, y];
-
-                    // Skip if cell already has content or has a rocket
-                    if (!currentCell.isEmpty || currentCell.hasRocket)
-                        continue;
-
-                    // Find the nearest cube above to fall down
-                    for (int yAbove = y + 1; yAbove < Height; yAbove++)
-                    {
-                        GridCell aboveCell = grid[x, yAbove];
-                        if (aboveCell.hasCube)
-                        {
-                            // Move cube down
-                            currentCell.SetCube(aboveCell.cube);
-                            aboveCell.ClearCube();
-
-                            // Animate cube falling with faster speed for rocket aftermath
-                            if (currentCell.cube != null)
-                            {
-                                StartCoroutine(
-                                    AnimateCubeFallFast(currentCell.cube, GridToWorldPosition(x, y))
-                                );
-                            }
-
-                            cubesMoved = true;
-                            break;
-                        }
-                    }
-                }
+                destroyPositions.Add(new Vector2Int(x, rocketGridPos.y));
             }
-
-            if (cubesMoved)
+        }
+        else // Vertical
+        {
+            for (int y = 0; y < Height; y++)
             {
-                // Shorter wait time for faster response
-                yield return new WaitForSeconds(0.05f);
+                destroyPositions.Add(new Vector2Int(rocketGridPos.x, y));
             }
         }
 
-        // Wait for animations to complete
-        yield return new WaitForSeconds(0.2f);
+        // Destroy the rocket GameObject itself
+        GameManager.Instance.effectsManager.PlayExplosionEffect(rocket.transform.position);
+        Destroy(rocket.gameObject);
 
-        Debug.Log($"Gravity applied completely in {iterations} iterations");
+        // Destroy cubes and collect them
+        foreach (Vector2Int pos in destroyPositions)
+        {
+            GridCell cell = GetCell(pos.x, pos.y);
+            if (cell != null && cell.hasCube)
+            {
+                GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
+                GameManager.Instance.effectsManager.PlayExplosionEffect(
+                    cell.cube.transform.position,
+                    cell.cube.ColorIndex
+                );
+                Destroy(cell.cube.gameObject);
+                cell.ClearCube();
+            }
+        }
+
+        GameManager.Instance.audioManager.PlayExplosionSound();
+
+        // Wait for visual destruction to be perceived
+        yield return new WaitForSeconds(
+            config.explosionDuration > 0.2f ? config.explosionDuration : 0.2f
+        );
+
+        // Now, run the standard grid update sequence
+        yield return StartCoroutine(ApplyGravity());
+        yield return StartCoroutine(FillEmptySpaces());
+        UpdateAllCubePositions();
+
+        isProcessingMatches = false;
+        Debug.Log("Rocket activation processing complete.");
     }
 
     IEnumerator ProcessMatches(List<GridCell> matches, Vector2Int clickPosition)
@@ -1130,28 +1114,6 @@ public class GridManager : MonoBehaviour
         yield return new WaitForSeconds(config.cubeFallSpeed / 5f);
     }
 
-    IEnumerator AnimateCubeFallFast(CubeController cube, Vector3 targetPosition)
-    {
-        if (cube == null)
-            yield break;
-
-        Vector3 startPosition = cube.transform.position;
-        float journey = 0f;
-        float speed = config.cubeFallSpeed * 2f; // Faster falling for rocket aftermath
-
-        while (journey <= 1f && cube != null)
-        {
-            journey += Time.deltaTime * speed;
-            cube.transform.position = Vector3.Lerp(startPosition, targetPosition, journey);
-            yield return null;
-        }
-
-        if (cube != null)
-        {
-            cube.transform.position = targetPosition;
-        }
-    }
-
     IEnumerator AnimateCubeFall(CubeController cube, Vector3 targetPosition)
     {
         if (cube == null)
@@ -1172,14 +1134,6 @@ public class GridManager : MonoBehaviour
         {
             cube.transform.position = targetPosition;
         }
-    }
-
-    // Update this existing method to use the improved gravity
-    public IEnumerator ApplyGravityAndFill()
-    {
-        yield return StartCoroutine(ApplyGravityCompletely());
-        yield return StartCoroutine(FillEmptySpaces());
-        UpdateAllCubePositions();
     }
 }
 
@@ -1383,7 +1337,6 @@ public class RocketController : MonoBehaviour
         else
         {
             spriteRenderer.sprite = config.rocketVerticalSprite;
-            transform.rotation = Quaternion.Euler(0, 0, 90); // Rotate for vertical
         }
 
         // Set proper sorting and rendering
@@ -1417,90 +1370,11 @@ public class RocketController : MonoBehaviour
     {
         Debug.Log($"Rocket clicked: {gameObject.name} at {GridPosition}");
 
-        if (GameManager.Instance.gameActive)
+        if (gridManager != null)
         {
-            ActivateRocket();
+            // Delegate click handling to the central GridManager
+            gridManager.HandleCubeClick(GridPosition.x, GridPosition.y);
         }
-    }
-
-    public void ActivateRocket()
-    {
-        Debug.Log($"Activating rocket: {direction} at {GridPosition}");
-
-        if (GameManager.Instance.TryMakeMove())
-        {
-            StartCoroutine(FireRocket());
-        }
-    }
-
-    IEnumerator FireRocket()
-    {
-        // Clear rocket from grid first
-        GridCell rocketCell = gridManager.GetCell(GridPosition.x, GridPosition.y);
-        if (rocketCell != null)
-        {
-            rocketCell.ClearRocket();
-        }
-
-        List<Vector2Int> destroyPositions = new List<Vector2Int>();
-
-        // Determine which cubes to destroy
-        if (direction == RocketDirection.Horizontal)
-        {
-            // Destroy entire row
-            for (int x = 0; x < gridManager.Width; x++)
-            {
-                destroyPositions.Add(new Vector2Int(x, GridPosition.y));
-            }
-            Debug.Log($"Rocket destroying row {GridPosition.y}");
-        }
-        else
-        {
-            // Destroy entire column
-            for (int y = 0; y < gridManager.Height; y++)
-            {
-                destroyPositions.Add(new Vector2Int(GridPosition.x, y));
-            }
-            Debug.Log($"Rocket destroying column {GridPosition.x}");
-        }
-
-        // Destroy cubes and collect them
-        int totalDestroyed = 0;
-        foreach (Vector2Int pos in destroyPositions)
-        {
-            GridCell cell = gridManager.GetCell(pos.x, pos.y);
-            if (cell != null && cell.hasCube)
-            {
-                // Collect for goals
-                GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
-
-                // Play explosion effect
-                GameManager.Instance.effectsManager.PlayExplosionEffect(
-                    cell.cube.transform.position,
-                    cell.cube.ColorIndex
-                );
-
-                // Destroy cube
-                Destroy(cell.cube.gameObject);
-                cell.ClearCube();
-                totalDestroyed++;
-            }
-        }
-
-        Debug.Log($"Rocket destroyed {totalDestroyed} cubes");
-
-        // Play sound and effects
-        GameManager.Instance.audioManager.PlayExplosionSound();
-        GameManager.Instance.effectsManager.PlayExplosionEffect(transform.position);
-
-        // Destroy rocket
-        Destroy(gameObject);
-
-        // Wait a bit for destruction to complete
-        yield return new WaitForSeconds(0.2f);
-
-        // CRITICAL: Trigger immediate grid update through GridManager
-        yield return StartCoroutine(gridManager.ProcessRocketDestruction());
     }
 
     // Visual feedback on hover
@@ -1534,15 +1408,19 @@ public class GoalUIItem : MonoBehaviour
 {
     [Header("UI References")]
     public Image goalIcon;
-    public Text goalText; // Legacy text support
-    public TextMeshProUGUI goalTextTMP; // TextMeshPro support - ADD THIS LINE
-    public Image progressBar;
+    public TextMeshProUGUI goalTextTMP; // Using TextMeshPro
 
     private LevelGoal currentGoal;
 
+    // Initialize the goal item with the starting target amount
     public void Initialize(LevelGoal goal, Sprite cubeSprite)
     {
-        currentGoal = goal;
+        currentGoal = new LevelGoal
+        {
+            colorIndex = goal.colorIndex,
+            targetAmount = goal.targetAmount,
+            currentAmount = 0
+        };
 
         if (goalIcon)
             goalIcon.sprite = cubeSprite;
@@ -1550,37 +1428,52 @@ public class GoalUIItem : MonoBehaviour
         UpdateDisplay();
     }
 
+    // This is called by UIManager whenever a cube is collected
     public void UpdateGoal(LevelGoal goal)
     {
         int oldAmount = currentGoal != null ? currentGoal.currentAmount : 0;
-        currentGoal = goal;
+        currentGoal = goal; // Update the internal goal state
         UpdateDisplay();
 
+        // Animate only when progress is made
         if (goal.currentAmount > oldAmount)
         {
             AnimateGoalCollection();
         }
     }
 
+    // REWORKED: This method now displays the remaining amount
     void UpdateDisplay()
     {
-        string displayText = $"{currentGoal.currentAmount}/{currentGoal.targetAmount}";
+        if (currentGoal == null)
+            return;
 
-        // Update whichever text component exists
+        // Calculate the remaining amount needed
+        int remainingAmount = currentGoal.targetAmount - currentGoal.currentAmount;
+        if (remainingAmount < 0)
+            remainingAmount = 0; // Prevent negative numbers
+
+        // Update the text to show only the remaining amount
         if (goalTextTMP != null)
-            goalTextTMP.text = displayText;
-        else if (goalText != null)
-            goalText.text = displayText;
-
-        if (progressBar)
         {
-            float progress = (float)currentGoal.currentAmount / currentGoal.targetAmount;
-            progressBar.fillAmount = Mathf.Clamp01(progress);
+            goalTextTMP.text = remainingAmount.ToString();
+        }
+
+        // If the goal is complete, you could add extra feedback,
+        // like hiding the text or showing a checkmark.
+        if (remainingAmount <= 0)
+        {
+            // For example, hide the text when the goal is met.
+            goalTextTMP.gameObject.SetActive(false);
+            // Optionally, change the icon to be grayed out
+            if (goalIcon)
+                goalIcon.color = Color.gray;
         }
     }
 
     void AnimateGoalCollection()
     {
+        // Simple scale animation to give feedback
         StartCoroutine(ScaleAnimation());
     }
 
@@ -1588,30 +1481,23 @@ public class GoalUIItem : MonoBehaviour
     {
         Vector3 originalScale = transform.localScale;
         Vector3 targetScale = originalScale * 1.2f;
-
         float duration = 0.1f;
-        float elapsed = 0;
-        while (elapsed < duration)
+
+        // Scale up
+        for (float t = 0; t < 1; t += Time.deltaTime / duration)
         {
-            elapsed += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / duration);
+            transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
             yield return null;
         }
 
-        elapsed = 0;
-        while (elapsed < duration)
+        // Scale down
+        for (float t = 0; t < 1; t += Time.deltaTime / duration)
         {
-            elapsed += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / duration);
+            transform.localScale = Vector3.Lerp(targetScale, originalScale, t);
             yield return null;
         }
 
         transform.localScale = originalScale;
-    }
-
-    public Vector3 GetWorldPosition()
-    {
-        return Camera.main.ScreenToWorldPoint(transform.position);
     }
 }
 
@@ -1628,12 +1514,8 @@ using UnityEngine.UI;
 public class UIManager : MonoBehaviour
 {
     [Header("UI References")]
-    public Text movesText;
     public TextMeshProUGUI movesTextTMP;
     public Transform goalsContainer;
-    public GameObject goalItemPrefab;
-
-    [Header("Panels")]
     public GameObject winPanel;
     public GameObject losePanel;
     public Button restartButton;
@@ -1653,179 +1535,145 @@ public class UIManager : MonoBehaviour
             defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
-        // Fix canvas issues
-        FixCanvasSetup();
-        FixMovesText();
+        if (winPanel)
+            winPanel.SetActive(false);
+        if (losePanel)
+            losePanel.SetActive(false);
+
+        SetupMovesText();
         SetupGoalUI();
         SetupPanels();
     }
 
-    void FixCanvasSetup()
-    {
-        Canvas canvas = GetComponentInParent<Canvas>();
-        if (canvas != null)
-        {
-            canvas.transform.localScale = Vector3.one;
-
-            // Set canvas to render behind cubes
-            canvas.sortingOrder = -1;
-        }
-
-        // Make background semi-transparent so cubes show through
-        GameObject background = GameObject.Find("Background");
-        if (background != null)
-        {
-            Image bgImage = background.GetComponent<Image>();
-            if (bgImage != null)
-            {
-                bgImage.raycastTarget = false;
-            }
-        }
-    }
-
-    void FixMovesText()
+    void SetupMovesText()
     {
         if (movesTextTMP != null)
         {
-            // Fix positioning
             RectTransform movesRect = movesTextTMP.GetComponent<RectTransform>();
-            movesRect.anchorMin = new Vector2(0.88f, 0.6f);
-            movesRect.anchorMax = new Vector2(0.88f, 0.6f);
-            movesRect.anchoredPosition = Vector2.zero;
-            movesRect.sizeDelta = new Vector2(300, 100);
 
-            // Fix text content and styling
+            movesRect.anchorMin = new Vector2(1, 1);
+            movesRect.anchorMax = new Vector2(1, 1);
+            movesRect.pivot = new Vector2(1, 1);
+            movesRect.anchoredPosition = new Vector2(-60, -60);
+            movesRect.sizeDelta = new Vector2(150, 100);
+
             movesTextTMP.text = "" + GameManager.Instance.currentMoves;
-            movesTextTMP.fontSize = 64;
-            movesTextTMP.color = Color.black;
+            movesTextTMP.fontSize = 90;
+            movesTextTMP.color = new Color32(198, 68, 60, 255);
             movesTextTMP.alignment = TextAlignmentOptions.Center;
             movesTextTMP.fontStyle = FontStyles.Bold;
+            movesTextTMP.outlineWidth = 0.25f;
+            movesTextTMP.outlineColor = new Color32(255, 243, 224, 255);
         }
     }
 
     void SetupGoalUI()
     {
-        // Clear existing goal items
+        RectTransform goalsRect = goalsContainer.GetComponent<RectTransform>();
+        if (goalsRect != null)
+        {
+            goalsRect.anchorMin = new Vector2(0.5f, 1);
+            goalsRect.anchorMax = new Vector2(0.5f, 1);
+            goalsRect.pivot = new Vector2(0.5f, 1);
+            goalsRect.anchoredPosition = new Vector2(25, -55);
+            goalsRect.sizeDelta = new Vector2(350, 120);
+        }
+
         foreach (Transform child in goalsContainer)
         {
-            if (Application.isPlaying)
-                Destroy(child.gameObject);
-            else
-                DestroyImmediate(child.gameObject);
+            Destroy(child.gameObject);
         }
         goalUIItems.Clear();
 
-        // Fix goals container positioning
-        RectTransform goalsRect = goalsContainer.GetComponent<RectTransform>();
-        goalsRect.anchorMin = new Vector2(0.4f, 0.4f);
-        goalsRect.anchorMax = new Vector2(0.7f, 0.8f);
-        goalsRect.anchoredPosition = Vector2.zero;
-        goalsRect.sizeDelta = new Vector2(350, 120);
+        HorizontalLayoutGroup layoutGroup = goalsContainer.GetComponent<HorizontalLayoutGroup>();
+        if (layoutGroup == null)
+        {
+            layoutGroup = goalsContainer.gameObject.AddComponent<HorizontalLayoutGroup>();
+        }
 
-        // Create goal UI items
+        layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+        layoutGroup.spacing = 15;
+        layoutGroup.padding = new RectOffset(10, 10, 10, 10);
+        layoutGroup.childControlWidth = false;
+        layoutGroup.childControlHeight = false;
+
         foreach (var goal in config.levelGoals)
         {
-            GameObject goalItem = CreateGoalItem(goal);
-            goalUIItems.Add(goalItem.GetComponent<GoalUIItem>());
+            GameObject goalItemObj = CreateGoalItem(goal);
+            goalUIItems.Add(goalItemObj.GetComponent<GoalUIItem>());
         }
     }
 
+    // REWORKED: This function now positions the text to the bottom-right.
     GameObject CreateGoalItem(LevelGoal goal)
     {
-        GameObject goalItem = new GameObject("GoalItem");
+        GameObject goalItem = new GameObject($"GoalItem_{goal.colorIndex}");
         goalItem.transform.SetParent(goalsContainer, false);
+        goalItem.AddComponent<RectTransform>().sizeDelta = new Vector2(110, 110);
 
-        // Add background
-        Image background = goalItem.AddComponent<Image>();
-
-        // Setup layout
-        RectTransform goalRect = goalItem.GetComponent<RectTransform>();
-        goalRect.sizeDelta = new Vector2(80, 80);
-
-        // Create icon
         GameObject iconObj = new GameObject("Icon");
         iconObj.transform.SetParent(goalItem.transform, false);
-        Image icon = iconObj.AddComponent<Image>();
-        icon.sprite = config.cubeSprites[goal.colorIndex];
+        Image iconImage = iconObj.AddComponent<Image>();
+        iconImage.sprite = config.cubeSprites[goal.colorIndex];
+        iconImage.rectTransform.sizeDelta = new Vector2(110, 110); // Make icon fill the space
+        iconImage.rectTransform.anchoredPosition = Vector2.zero;
 
-        RectTransform iconRect = iconObj.GetComponent<RectTransform>();
-        iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.7f);
-        iconRect.sizeDelta = new Vector2(80, 80);
-        iconRect.anchoredPosition = Vector2.zero;
-
-        // Create text
-        GameObject textObj = new GameObject("Text");
+        GameObject textObj = new GameObject("Text (TMP)");
         textObj.transform.SetParent(goalItem.transform, false);
-
         TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
-        tmpText.text = $"0/{goal.targetAmount}";
-        tmpText.fontSize = 18;
-        tmpText.color = Color.white;
-        tmpText.alignment = TextAlignmentOptions.Center;
+
+        // Set the initial text to be the total target amount
+        tmpText.text = goal.targetAmount.ToString();
+        tmpText.fontSize = 52;
+        tmpText.color = new Color32(0, 0, 0, 255);
         tmpText.fontStyle = FontStyles.Bold;
+        tmpText.outlineWidth = 0.2f;
+        tmpText.outlineColor = new Color32(255, 243, 224, 255);
 
+        // --- POSITIONING & ALIGNMENT CHANGES ---
         RectTransform textRect = textObj.GetComponent<RectTransform>();
-        textRect.anchorMin = textRect.anchorMax = new Vector2(0.5f, 0.3f);
-        textRect.sizeDelta = new Vector2(70, 25);
-        textRect.anchoredPosition = Vector2.zero;
 
-        // Add GoalUIItem component
-        GoalUIItem goalUIItem = goalItem.AddComponent<GoalUIItem>();
-        goalUIItem.goalIcon = icon;
-        goalUIItem.goalTextTMP = tmpText;
-        goalUIItem.Initialize(goal, config.cubeSprites[goal.colorIndex]);
+        // Anchor and pivot to the bottom-right of the parent (the icon)
+        textRect.anchorMin = new Vector2(1, 0);
+        textRect.anchorMax = new Vector2(1, 0);
+        textRect.pivot = new Vector2(1, 0);
+
+        // Set the size of the text box
+        textRect.sizeDelta = new Vector2(80, 50);
+
+        // Position with padding from the corner
+        textRect.anchoredPosition = new Vector2(-5, 5);
+
+        // Align the text itself to the center of its own box for a clean look
+        tmpText.alignment = TextAlignmentOptions.Center;
+
+        // --- END OF CHANGES ---
+
+        GoalUIItem goalUIComponent = goalItem.AddComponent<GoalUIItem>();
+        goalUIComponent.goalIcon = iconImage;
+        goalUIComponent.goalTextTMP = tmpText;
+        goalUIComponent.Initialize(goal, config.cubeSprites[goal.colorIndex]);
 
         return goalItem;
     }
 
     void SetupPanels()
     {
-        if (winPanel == null)
-            winPanel = CreateGameOverPanel("You Win!", Color.green);
-
-        if (losePanel == null)
-            losePanel = CreateGameOverPanel("Game Over", Color.red);
-
         if (restartButton != null)
         {
             restartButton.onClick.RemoveAllListeners();
             restartButton.onClick.AddListener(RestartGame);
         }
-    }
+        else if (winPanel != null && losePanel != null)
+        {
+            Button winRestartButton = winPanel.GetComponentInChildren<Button>();
+            if (winRestartButton)
+                winRestartButton.onClick.AddListener(RestartGame);
 
-    GameObject CreateGameOverPanel(string message, Color color)
-    {
-        GameObject panel = new GameObject(message + "Panel");
-        panel.transform.SetParent(transform, false);
-
-        // Background
-        Image bg = panel.AddComponent<Image>();
-        bg.color = new Color(0, 0, 0, 0.8f);
-
-        // Text
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(panel.transform, false);
-
-        TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
-        tmpText.text = message;
-        tmpText.fontSize = 48;
-        tmpText.color = color;
-        tmpText.alignment = TextAlignmentOptions.Center;
-
-        // Layout
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = Vector2.zero;
-        panelRect.anchorMax = Vector2.one;
-        panelRect.sizeDelta = Vector2.zero;
-        panelRect.anchoredPosition = Vector2.zero;
-
-        RectTransform textRect = textObj.GetComponent<RectTransform>();
-        textRect.anchorMin = textRect.anchorMax = new Vector2(0.5f, 0.5f);
-        textRect.sizeDelta = new Vector2(400, 100);
-        textRect.anchoredPosition = Vector2.zero;
-
-        panel.SetActive(false);
-        return panel;
+            Button loseRestartButton = losePanel.GetComponentInChildren<Button>();
+            if (loseRestartButton)
+                loseRestartButton.onClick.AddListener(RestartGame);
+        }
     }
 
     public void UpdateUI()
@@ -1836,12 +1684,8 @@ public class UIManager : MonoBehaviour
 
     public void UpdateMoves(int moves)
     {
-        string moveText = "" + moves.ToString();
-
         if (movesTextTMP != null)
-            movesTextTMP.text = moveText;
-        else if (movesText != null)
-            movesText.text = moveText;
+            movesTextTMP.text = moves.ToString();
     }
 
     public void UpdateGoals(List<LevelGoal> goals)
@@ -1870,18 +1714,6 @@ public class UIManager : MonoBehaviour
             winPanel.SetActive(false);
         if (losePanel)
             losePanel.SetActive(false);
-    }
-
-    public Vector3 GetGoalUIPosition(int colorIndex)
-    {
-        foreach (var goalItem in goalUIItems)
-        {
-            if (goalItem != null)
-            {
-                return goalItem.GetWorldPosition();
-            }
-        }
-        return Vector3.zero;
     }
 
     void RestartGame()

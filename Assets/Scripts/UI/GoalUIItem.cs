@@ -6,15 +6,19 @@ public class GoalUIItem : MonoBehaviour
 {
     [Header("UI References")]
     public Image goalIcon;
-    public Text goalText; // Legacy text support
-    public TextMeshProUGUI goalTextTMP; // TextMeshPro support - ADD THIS LINE
-    public Image progressBar;
+    public TextMeshProUGUI goalTextTMP; // Using TextMeshPro
 
     private LevelGoal currentGoal;
 
+    // Initialize the goal item with the starting target amount
     public void Initialize(LevelGoal goal, Sprite cubeSprite)
     {
-        currentGoal = goal;
+        currentGoal = new LevelGoal
+        {
+            colorIndex = goal.colorIndex,
+            targetAmount = goal.targetAmount,
+            currentAmount = 0
+        };
 
         if (goalIcon)
             goalIcon.sprite = cubeSprite;
@@ -22,37 +26,52 @@ public class GoalUIItem : MonoBehaviour
         UpdateDisplay();
     }
 
+    // This is called by UIManager whenever a cube is collected
     public void UpdateGoal(LevelGoal goal)
     {
         int oldAmount = currentGoal != null ? currentGoal.currentAmount : 0;
-        currentGoal = goal;
+        currentGoal = goal; // Update the internal goal state
         UpdateDisplay();
 
+        // Animate only when progress is made
         if (goal.currentAmount > oldAmount)
         {
             AnimateGoalCollection();
         }
     }
 
+    // REWORKED: This method now displays the remaining amount
     void UpdateDisplay()
     {
-        string displayText = $"{currentGoal.currentAmount}/{currentGoal.targetAmount}";
+        if (currentGoal == null)
+            return;
 
-        // Update whichever text component exists
+        // Calculate the remaining amount needed
+        int remainingAmount = currentGoal.targetAmount - currentGoal.currentAmount;
+        if (remainingAmount < 0)
+            remainingAmount = 0; // Prevent negative numbers
+
+        // Update the text to show only the remaining amount
         if (goalTextTMP != null)
-            goalTextTMP.text = displayText;
-        else if (goalText != null)
-            goalText.text = displayText;
-
-        if (progressBar)
         {
-            float progress = (float)currentGoal.currentAmount / currentGoal.targetAmount;
-            progressBar.fillAmount = Mathf.Clamp01(progress);
+            goalTextTMP.text = remainingAmount.ToString();
+        }
+
+        // If the goal is complete, you could add extra feedback,
+        // like hiding the text or showing a checkmark.
+        if (remainingAmount <= 0)
+        {
+            // For example, hide the text when the goal is met.
+            goalTextTMP.gameObject.SetActive(false);
+            // Optionally, change the icon to be grayed out
+            if (goalIcon)
+                goalIcon.color = Color.gray;
         }
     }
 
     void AnimateGoalCollection()
     {
+        // Simple scale animation to give feedback
         StartCoroutine(ScaleAnimation());
     }
 
@@ -60,29 +79,22 @@ public class GoalUIItem : MonoBehaviour
     {
         Vector3 originalScale = transform.localScale;
         Vector3 targetScale = originalScale * 1.2f;
-
         float duration = 0.1f;
-        float elapsed = 0;
-        while (elapsed < duration)
+
+        // Scale up
+        for (float t = 0; t < 1; t += Time.deltaTime / duration)
         {
-            elapsed += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / duration);
+            transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
             yield return null;
         }
 
-        elapsed = 0;
-        while (elapsed < duration)
+        // Scale down
+        for (float t = 0; t < 1; t += Time.deltaTime / duration)
         {
-            elapsed += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / duration);
+            transform.localScale = Vector3.Lerp(targetScale, originalScale, t);
             yield return null;
         }
 
         transform.localScale = originalScale;
-    }
-
-    public Vector3 GetWorldPosition()
-    {
-        return Camera.main.ScreenToWorldPoint(transform.position);
     }
 }
