@@ -40,6 +40,9 @@ MonoBehaviour:
   - colorIndex: 0
     targetAmount: 15
     currentAmount: 0
+  - colorIndex: 1
+    targetAmount: 15
+    currentAmount: 0
   cubeFallSpeed: 5
   explosionDuration: 0.5
   rocketMoveSpeed: 10

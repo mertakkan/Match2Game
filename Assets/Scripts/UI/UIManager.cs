@@ -31,11 +31,34 @@ public class UIManager : MonoBehaviour
             defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
-        // Fix the moves text positioning and content
+        // Fix canvas issues
+        FixCanvasSetup();
         FixMovesText();
-
         SetupGoalUI();
         SetupPanels();
+    }
+
+    void FixCanvasSetup()
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas != null)
+        {
+            canvas.transform.localScale = Vector3.one;
+
+            // Set canvas to render behind cubes
+            canvas.sortingOrder = -1;
+        }
+
+        // Make background semi-transparent so cubes show through
+        GameObject background = GameObject.Find("Background");
+        if (background != null)
+        {
+            Image bgImage = background.GetComponent<Image>();
+            if (bgImage != null)
+            {
+                bgImage.raycastTarget = false;
+            }
+        }
     }
 
     void FixMovesText()
@@ -44,15 +67,15 @@ public class UIManager : MonoBehaviour
         {
             // Fix positioning
             RectTransform movesRect = movesTextTMP.GetComponent<RectTransform>();
-            movesRect.anchorMin = new Vector2(0.1f, 0.5f);
-            movesRect.anchorMax = new Vector2(0.4f, 0.5f);
+            movesRect.anchorMin = new Vector2(0.88f, 0.6f);
+            movesRect.anchorMax = new Vector2(0.88f, 0.6f);
             movesRect.anchoredPosition = Vector2.zero;
-            movesRect.sizeDelta = new Vector2(200, 50);
+            movesRect.sizeDelta = new Vector2(300, 100);
 
             // Fix text content and styling
-            movesTextTMP.text = "Moves: " + GameManager.Instance.currentMoves;
-            movesTextTMP.fontSize = 28;
-            movesTextTMP.color = Color.white;
+            movesTextTMP.text = "" + GameManager.Instance.currentMoves;
+            movesTextTMP.fontSize = 64;
+            movesTextTMP.color = Color.black;
             movesTextTMP.alignment = TextAlignmentOptions.Center;
             movesTextTMP.fontStyle = FontStyles.Bold;
         }
@@ -72,10 +95,10 @@ public class UIManager : MonoBehaviour
 
         // Fix goals container positioning
         RectTransform goalsRect = goalsContainer.GetComponent<RectTransform>();
-        goalsRect.anchorMin = new Vector2(0.6f, 0.5f);
-        goalsRect.anchorMax = new Vector2(0.9f, 0.5f);
+        goalsRect.anchorMin = new Vector2(0.4f, 0.4f);
+        goalsRect.anchorMax = new Vector2(0.7f, 0.8f);
         goalsRect.anchoredPosition = Vector2.zero;
-        goalsRect.sizeDelta = new Vector2(300, 80);
+        goalsRect.sizeDelta = new Vector2(350, 120);
 
         // Create goal UI items
         foreach (var goal in config.levelGoals)
@@ -92,7 +115,6 @@ public class UIManager : MonoBehaviour
 
         // Add background
         Image background = goalItem.AddComponent<Image>();
-        background.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
 
         // Setup layout
         RectTransform goalRect = goalItem.GetComponent<RectTransform>();
@@ -106,7 +128,7 @@ public class UIManager : MonoBehaviour
 
         RectTransform iconRect = iconObj.GetComponent<RectTransform>();
         iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.7f);
-        iconRect.sizeDelta = new Vector2(40, 40);
+        iconRect.sizeDelta = new Vector2(80, 80);
         iconRect.anchoredPosition = Vector2.zero;
 
         // Create text
@@ -192,7 +214,7 @@ public class UIManager : MonoBehaviour
 
     public void UpdateMoves(int moves)
     {
-        string moveText = "Moves: " + moves.ToString();
+        string moveText = "" + moves.ToString();
 
         if (movesTextTMP != null)
             movesTextTMP.text = moveText;

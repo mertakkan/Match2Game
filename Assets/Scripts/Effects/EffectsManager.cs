@@ -16,7 +16,7 @@ public class EffectsManager : MonoBehaviour
 
     void CreateParticleSystemPrefab()
     {
-        if (particleSystemPrefab == null)
+        if (particleSystemPrefab == null && config.particleSprites.Length > 0)
         {
             // Create particle system prefab programmatically
             GameObject prefab = new GameObject("CubeExplosionParticle");
@@ -25,34 +25,36 @@ public class EffectsManager : MonoBehaviour
             var main = ps.main;
             main.startLifetime = config.particleLifetime;
             main.startSpeed = 5f;
-            main.startSize = 0.2f;
+            main.startSize = 0.3f;
             main.startColor = Color.white;
-            main.maxParticles = 20;
+            main.maxParticles = 15;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
 
             var emission = ps.emission;
             emission.rateOverTime = 0;
-            emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 15) });
+            emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 10) });
 
             var shape = ps.shape;
             shape.enabled = true;
             shape.shapeType = ParticleSystemShapeType.Circle;
-            shape.radius = 0.5f;
+            shape.radius = 0.3f;
 
             var velocityOverLifetime = ps.velocityOverLifetime;
             velocityOverLifetime.enabled = true;
             velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
-            velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(3f);
+            velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(2f, 4f);
 
-            // Set texture renderer
+            // Set texture renderer with proper material
             var renderer = ps.GetComponent<ParticleSystemRenderer>();
-            if (config.particleSprites.Length > 0)
-            {
-                renderer.material = new Material(Shader.Find("Sprites/Default"));
-                renderer.material.mainTexture = config.particleSprites[0].texture;
-            }
+            renderer.material = new Material(Shader.Find("Sprites/Default"));
+
+            // Use the first particle sprite
+            renderer.material.mainTexture = config.particleSprites[0].texture;
+            renderer.sortingLayerName = "Default";
+            renderer.sortingOrder = 10; // Above cubes
 
             particleSystemPrefab = prefab;
+            particleSystemPrefab.SetActive(false); // Keep it inactive as prefab
         }
     }
 
@@ -60,25 +62,60 @@ public class EffectsManager : MonoBehaviour
     {
         if (particleSystemPrefab != null)
         {
+            // Ensure position is valid and not NaN or infinity
+            if (float.IsNaN(position.x) || float.IsNaN(position.y) || float.IsNaN(position.z))
+            {
+                Debug.LogWarning("Invalid particle position detected, skipping effect");
+                return;
+            }
+
             GameObject particle = Instantiate(particleSystemPrefab, position, Quaternion.identity);
+            particle.SetActive(true);
 
             // Set particle color based on cube color
             ParticleSystem ps = particle.GetComponent<ParticleSystem>();
-            var main = ps.main;
+            if (ps != null)
+            {
+                var main = ps.main;
 
-            // Get color from cube sprite (you can customize this)
-            Color particleColor = GetColorFromIndex(colorIndex);
-            main.startColor = particleColor;
+                // Get color from cube color index
+                Color particleColor = GetColorFromIndex(colorIndex);
+                main.startColor = particleColor;
 
-            // Auto-destroy after particle lifetime
-            StartCoroutine(DestroyAfterDelay(particle, config.particleLifetime + 0.5f));
+                // Randomize particle sprite if we have multiple
+                var renderer = ps.GetComponent<ParticleSystemRenderer>();
+                if (config.particleSprites.Length > 1)
+                {
+                    int randomSpriteIndex = Random.Range(0, config.particleSprites.Length);
+                    renderer.material.mainTexture = config
+                        .particleSprites[randomSpriteIndex]
+                        .texture;
+                }
+
+                // Play the particle system
+                ps.Play();
+
+                // Auto-destroy after particle lifetime
+                StartCoroutine(DestroyAfterDelay(particle, config.particleLifetime + 0.5f));
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Particle system prefab is null!");
         }
     }
 
     Color GetColorFromIndex(int colorIndex)
     {
-        // Map color indices to actual colors
-        Color[] colors = { Color.red, Color.blue, Color.green, Color.yellow, Color.magenta };
+        // Map color indices to actual colors - you can customize these
+        Color[] colors =
+        {
+            new Color(1f, 0.2f, 0.2f), // Red
+            new Color(0.2f, 0.2f, 1f), // Blue
+            new Color(0.2f, 1f, 0.2f), // Green
+            new Color(1f, 1f, 0.2f), // Yellow
+            new Color(1f, 0.2f, 1f) // Magenta
+        };
         return colorIndex < colors.Length ? colors[colorIndex] : Color.white;
     }
 
@@ -86,6 +123,8 @@ public class EffectsManager : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         if (obj != null)
+        {
             Destroy(obj);
+        }
     }
 }

@@ -34,7 +34,9 @@ public class GridManager : MonoBehaviour
         // Add SpriteRenderer
         SpriteRenderer sr = cubePrefab.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        sr.sortingOrder = 1;
+        sr.sortingOrder = 5; // Match the Initialize method
+        sr.color = new Color(1f, 1f, 1f, 1f); // Full opacity
+        sr.material = new Material(Shader.Find("Sprites/Default")); // Ensure proper material
 
         // Add BoxCollider2D
         BoxCollider2D collider = cubePrefab.AddComponent<BoxCollider2D>();
@@ -95,11 +97,11 @@ public class GridManager : MonoBehaviour
         float totalWidth = Width * config.cellSize + (Width - 1) * config.gridSpacing;
         float totalHeight = Height * config.cellSize + (Height - 1) * config.gridSpacing;
 
-        // Center the grid at Z = 0 (in front of camera)
+        // Position grid in the center of the screen, slightly above center to account for UI
         Vector3 gridOffset = new Vector3(
             -totalWidth * 0.5f + config.cellSize * 0.5f,
-            -totalHeight * 0.5f + config.cellSize * 0.5f,
-            0 // Changed from -10 to 0
+            -totalHeight * 0.5f + config.cellSize * 0.5f + 1f, // Offset up slightly
+            0 // Keep at Z=0 for proper layering
         );
 
         if (gridParent != null)
@@ -107,11 +109,46 @@ public class GridManager : MonoBehaviour
             gridParent.position = gridOffset;
         }
 
-        // Adjust camera size to fit grid with some padding
-        float requiredSize = Mathf.Max(totalHeight * 0.7f, totalWidth * 0.7f / mainCamera.aspect);
+        // Adjust camera to fit the game area
+        float requiredSize = Mathf.Max(totalHeight * 0.8f, totalWidth * 0.6f / mainCamera.aspect);
         mainCamera.orthographicSize = requiredSize;
 
-        Debug.Log($"Grid size: {Width}x{Height}, Camera size: {requiredSize}");
+        // Ensure camera is positioned correctly
+        mainCamera.transform.position = new Vector3(0, 1f, -10f); // Slightly up to match grid offset
+
+        Debug.Log(
+            $"Grid size: {Width}x{Height}, Camera size: {requiredSize}, Grid position: {gridOffset}"
+        );
+    }
+
+    void Update()
+    {
+        // Temporary debug - remove after fixing
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            DebugGridState();
+        }
+    }
+
+    void DebugGridState()
+    {
+        Debug.Log($"Grid Parent Position: {gridParent.position}");
+        Debug.Log($"Camera Position: {mainCamera.transform.position}");
+        Debug.Log($"Camera Size: {mainCamera.orthographicSize}");
+
+        // Count visible cubes
+        int cubeCount = 0;
+        foreach (Transform child in gridParent)
+        {
+            if (child.gameObject.activeInHierarchy)
+            {
+                cubeCount++;
+                Debug.Log(
+                    $"Cube at: {child.position}, Active: {child.gameObject.activeInHierarchy}"
+                );
+            }
+        }
+        Debug.Log($"Total active cubes: {cubeCount}");
     }
 
     void FillInitialGrid()
@@ -256,10 +293,18 @@ public class GridManager : MonoBehaviour
         {
             if (cell.cube != null)
             {
-                GameManager.Instance.effectsManager.PlayExplosionEffect(
-                    cell.cube.transform.position,
-                    cell.cube.ColorIndex
-                );
+                // Get the world position before destroying the cube
+                Vector3 explosionPosition = cell.cube.transform.position;
+
+                // Validate position before creating effect
+                if (!float.IsNaN(explosionPosition.x) && !float.IsNaN(explosionPosition.y))
+                {
+                    GameManager.Instance.effectsManager.PlayExplosionEffect(
+                        explosionPosition,
+                        cell.cube.ColorIndex
+                    );
+                }
+
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
             }

@@ -51,26 +51,41 @@ public class GameManager : MonoBehaviour
         if (gameConfig == null)
         {
             gameConfig = Resources.Load<GameConfig>("GameConfig");
+            if (gameConfig == null)
+            {
+                Debug.LogError("GameConfig not found in Resources folder!");
+                return;
+            }
         }
 
         currentMoves = gameConfig.movesPerLevel;
         currentGoals = new List<LevelGoal>();
 
         // Copy goals from config
-        foreach (var goal in gameConfig.levelGoals)
+        if (gameConfig.levelGoals != null)
         {
-            currentGoals.Add(
-                new LevelGoal
-                {
-                    colorIndex = goal.colorIndex,
-                    targetAmount = goal.targetAmount,
-                    currentAmount = 0
-                }
-            );
+            foreach (var goal in gameConfig.levelGoals)
+            {
+                currentGoals.Add(
+                    new LevelGoal
+                    {
+                        colorIndex = goal.colorIndex,
+                        targetAmount = goal.targetAmount,
+                        currentAmount = 0
+                    }
+                );
+            }
         }
 
-        gridManager.InitializeGrid();
-        uiManager.UpdateUI();
+        if (gridManager != null)
+            gridManager.InitializeGrid();
+        else
+            Debug.LogError("GridManager reference is missing!");
+
+        if (uiManager != null)
+            uiManager.UpdateUI();
+        else
+            Debug.LogError("UIManager reference is missing!");
     }
 
     public bool TryMakeMove()

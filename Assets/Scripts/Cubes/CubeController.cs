@@ -19,9 +19,19 @@ public class CubeController : MonoBehaviour
         ColorIndex = colorIndex;
         spriteRenderer.sprite = cubeSprite;
 
-        // Ensure proper sorting
+        // Ensure proper sorting - cubes should be visible above background
         spriteRenderer.sortingLayerName = "Default";
-        spriteRenderer.sortingOrder = 1;
+        spriteRenderer.sortingOrder = 5;
+
+        // Ensure the sprite renderer is properly configured with full opacity
+        spriteRenderer.color = new Color(1f, 1f, 1f, 1f); // Explicitly set alpha to 1
+        spriteRenderer.enabled = true;
+
+        // Ensure proper material
+        if (spriteRenderer.material == null || spriteRenderer.material.name.Contains("Default"))
+        {
+            spriteRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        }
     }
 
     public void SetGridPosition(Vector2Int position)

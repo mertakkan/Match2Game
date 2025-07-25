@@ -27,11 +27,23 @@ public class RocketController : MonoBehaviour
     {
         direction = dir;
 
-        // Set appropriate sprite
+        // Set appropriate sprite based on direction
         if (direction == RocketDirection.Horizontal)
+        {
+            // Use the rocket_left sprite for horizontal rockets
             spriteRenderer.sprite = config.rocketHorizontalSprite;
+        }
         else
+        {
+            // For vertical rockets, you might want to rotate the horizontal sprite
+            // or create a separate vertical sprite
             spriteRenderer.sprite = config.rocketVerticalSprite;
+            transform.rotation = Quaternion.Euler(0, 0, 90); // Rotate for vertical
+        }
+
+        // Set proper sorting
+        spriteRenderer.sortingLayerName = "Default";
+        spriteRenderer.sortingOrder = 6; // Above cubes but below particles
 
         transform.position = gridManager.GridToWorldPosition(gridPos.x, gridPos.y);
     }
