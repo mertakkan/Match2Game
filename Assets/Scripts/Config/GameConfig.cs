@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum GoalType
+{
+    Cube,
+    Balloon,
+    Duck
+}
+
 [CreateAssetMenu(fileName = "GameConfig", menuName = "Match2Game/GameConfig")]
 public class GameConfig : ScriptableObject
 {
@@ -14,8 +21,12 @@ public class GameConfig : ScriptableObject
     public int minMatchSize = 2;
     public int rocketTriggerSize = 5;
 
+    public int ducksInLevel = 0;
+
+    public int balloonsInLevel = 0;
+
     [Header("Cube Settings")]
-    public Sprite[] cubeSprites = new Sprite[5]; // Assign cube_1 to cube_5 sprites here
+    public Sprite[] cubeSprites = new Sprite[5];
 
     [Header("Special Object Sprites")]
     public Sprite balloonSprite;
@@ -30,7 +41,7 @@ public class GameConfig : ScriptableObject
     public Sprite bordersSprite;
 
     [Header("Particle Sprites")]
-    public Sprite[] particleSprites = new Sprite[2]; // cubeParticle1 and cubeParticle2
+    public Sprite[] particleSprites = new Sprite[2];
 
     [Header("Level Goals")]
     public LevelGoal[] levelGoals;
@@ -51,6 +62,8 @@ public class GameConfig : ScriptableObject
 [System.Serializable]
 public class LevelGoal
 {
+    public GoalType goalType;
+
     public int colorIndex;
     public int targetAmount;
     public int currentAmount;

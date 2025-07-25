@@ -63,6 +63,13 @@ FILE: F:\Unity\Match2Game\Assets\Scripts\Config\GameConfig.cs
 
 using UnityEngine;
 
+public enum GoalType
+{
+    Cube,
+    Balloon,
+    Duck
+}
+
 [CreateAssetMenu(fileName = "GameConfig", menuName = "Match2Game/GameConfig")]
 public class GameConfig : ScriptableObject
 {
@@ -77,8 +84,12 @@ public class GameConfig : ScriptableObject
     public int minMatchSize = 2;
     public int rocketTriggerSize = 5;
 
+    public int ducksInLevel = 0;
+
+    public int balloonsInLevel = 0;
+
     [Header("Cube Settings")]
-    public Sprite[] cubeSprites = new Sprite[5]; // Assign cube_1 to cube_5 sprites here
+    public Sprite[] cubeSprites = new Sprite[5];
 
     [Header("Special Object Sprites")]
     public Sprite balloonSprite;
@@ -93,7 +104,7 @@ public class GameConfig : ScriptableObject
     public Sprite bordersSprite;
 
     [Header("Particle Sprites")]
-    public Sprite[] particleSprites = new Sprite[2]; // cubeParticle1 and cubeParticle2
+    public Sprite[] particleSprites = new Sprite[2];
 
     [Header("Level Goals")]
     public LevelGoal[] levelGoals;
@@ -114,6 +125,8 @@ public class GameConfig : ScriptableObject
 [System.Serializable]
 public class LevelGoal
 {
+    public GoalType goalType;
+
     public int colorIndex;
     public int targetAmount;
     public int currentAmount;
@@ -159,7 +172,6 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // Find references if not assigned
         if (gridManager == null)
             gridManager = FindObjectOfType<GridManager>();
         if (uiManager == null)
@@ -187,7 +199,6 @@ public class GameManager : MonoBehaviour
         currentMoves = gameConfig.movesPerLevel;
         currentGoals = new List<LevelGoal>();
 
-        // Copy goals from config
         if (gameConfig.levelGoals != null)
         {
             foreach (var goal in gameConfig.levelGoals)
@@ -195,6 +206,7 @@ public class GameManager : MonoBehaviour
                 currentGoals.Add(
                     new LevelGoal
                     {
+                        goalType = goal.goalType,
                         colorIndex = goal.colorIndex,
                         targetAmount = goal.targetAmount,
                         currentAmount = 0
@@ -230,14 +242,41 @@ public class GameManager : MonoBehaviour
     {
         foreach (var goal in currentGoals)
         {
-            if (goal.colorIndex == colorIndex)
+            if (goal.goalType == GoalType.Cube && goal.colorIndex == colorIndex)
             {
                 goal.currentAmount = Mathf.Min(goal.currentAmount + amount, goal.targetAmount);
                 uiManager.UpdateGoals(currentGoals);
                 break;
             }
         }
+        CheckWinCondition();
+    }
 
+    public void CollectDuck(int amount = 1)
+    {
+        foreach (var goal in currentGoals)
+        {
+            if (goal.goalType == GoalType.Duck)
+            {
+                goal.currentAmount = Mathf.Min(goal.currentAmount + amount, goal.targetAmount);
+                uiManager.UpdateGoals(currentGoals);
+                break;
+            }
+        }
+        CheckWinCondition();
+    }
+
+    public void CollectBalloon(int amount = 1)
+    {
+        foreach (var goal in currentGoals)
+        {
+            if (goal.goalType == GoalType.Balloon)
+            {
+                goal.currentAmount = Mathf.Min(goal.currentAmount + amount, goal.targetAmount);
+                uiManager.UpdateGoals(currentGoals);
+                break;
+            }
+        }
         CheckWinCondition();
     }
 
@@ -316,7 +355,7 @@ public class CubeController : MonoBehaviour
         spriteRenderer.sprite = cubeSprite;
 
         spriteRenderer.sortingLayerName = "Default";
-        spriteRenderer.sortingOrder = 5;
+
         spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
         spriteRenderer.enabled = true;
 
@@ -325,7 +364,6 @@ public class CubeController : MonoBehaviour
             spriteRenderer.material = new Material(Shader.Find("Sprites/Default"));
         }
 
-        // Ensure collider is enabled and properly sized
         if (cubeCollider != null)
         {
             cubeCollider.enabled = true;
@@ -346,7 +384,6 @@ public class CubeController : MonoBehaviour
 
     void OnMouseDown()
     {
-        // Add debug info
         Debug.Log($"Cube clicked: {gameObject.name} at grid position {GridPosition}");
 
         if (GridPosition.x >= 0 && GridPosition.y >= 0)
@@ -389,10 +426,8 @@ public class CubeController : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // Add this for debugging
     void OnMouseEnter()
     {
-        // Optional: Add visual feedback when hovering
         if (spriteRenderer != null)
         {
             spriteRenderer.color = new Color(1.2f, 1.2f, 1.2f, 1f);
@@ -401,7 +436,6 @@ public class CubeController : MonoBehaviour
 
     void OnMouseExit()
     {
-        // Reset color
         if (spriteRenderer != null)
         {
             spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
@@ -434,7 +468,6 @@ public class EffectsManager : MonoBehaviour
     {
         if (particleSystemPrefab == null && config.particleSprites.Length > 0)
         {
-            // Create particle system prefab programmatically
             GameObject prefab = new GameObject("CubeExplosionParticle");
             ParticleSystem ps = prefab.AddComponent<ParticleSystem>();
 
@@ -460,17 +493,15 @@ public class EffectsManager : MonoBehaviour
             velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
             velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(2f, 4f);
 
-            // Set texture renderer with proper material
             var renderer = ps.GetComponent<ParticleSystemRenderer>();
             renderer.material = new Material(Shader.Find("Sprites/Default"));
 
-            // Use the first particle sprite
             renderer.material.mainTexture = config.particleSprites[0].texture;
             renderer.sortingLayerName = "Default";
-            renderer.sortingOrder = 10; // Above cubes
+            renderer.sortingOrder = 10;
 
             particleSystemPrefab = prefab;
-            particleSystemPrefab.SetActive(false); // Keep it inactive as prefab
+            particleSystemPrefab.SetActive(false);
         }
     }
 
@@ -478,7 +509,6 @@ public class EffectsManager : MonoBehaviour
     {
         if (particleSystemPrefab != null)
         {
-            // Ensure position is valid and not NaN or infinity
             if (float.IsNaN(position.x) || float.IsNaN(position.y) || float.IsNaN(position.z))
             {
                 Debug.LogWarning("Invalid particle position detected, skipping effect");
@@ -488,17 +518,14 @@ public class EffectsManager : MonoBehaviour
             GameObject particle = Instantiate(particleSystemPrefab, position, Quaternion.identity);
             particle.SetActive(true);
 
-            // Set particle color based on cube color
             ParticleSystem ps = particle.GetComponent<ParticleSystem>();
             if (ps != null)
             {
                 var main = ps.main;
 
-                // Get color from cube color index
                 Color particleColor = GetColorFromIndex(colorIndex);
                 main.startColor = particleColor;
 
-                // Randomize particle sprite if we have multiple
                 var renderer = ps.GetComponent<ParticleSystemRenderer>();
                 if (config.particleSprites.Length > 1)
                 {
@@ -508,10 +535,8 @@ public class EffectsManager : MonoBehaviour
                         .texture;
                 }
 
-                // Play the particle system
                 ps.Play();
 
-                // Auto-destroy after particle lifetime
                 StartCoroutine(DestroyAfterDelay(particle, config.particleLifetime + 0.5f));
             }
         }
@@ -523,16 +548,21 @@ public class EffectsManager : MonoBehaviour
 
     Color GetColorFromIndex(int colorIndex)
     {
-        // Map color indices to actual colors - you can customize these
         Color[] colors =
         {
-            new Color(1f, 0.2f, 0.2f), // Red
-            new Color(0.2f, 0.2f, 1f), // Blue
-            new Color(0.2f, 1f, 0.2f), // Green
-            new Color(1f, 1f, 0.2f), // Yellow
-            new Color(1f, 0.2f, 1f) // Magenta
+            Color.yellow,
+            Color.red,
+            new Color(0f, 0.6f, 1f),
+            Color.green,
+            new Color(0.8f, 0.4f, 0.9f)
         };
-        return colorIndex < colors.Length ? colors[colorIndex] : Color.white;
+
+        if (colorIndex >= 0 && colorIndex < colors.Length)
+        {
+            return colors[colorIndex];
+        }
+
+        return Color.white;
     }
 
     IEnumerator DestroyAfterDelay(GameObject obj, float delay)
@@ -559,21 +589,32 @@ public class GridCell
     public CubeController cube;
     public RocketController rocket;
 
-    public bool isEmpty => cube == null && rocket == null;
+    public DuckController duck;
+
+    public BalloonController balloon;
+
+    public bool isEmpty => cube == null && rocket == null && duck == null && balloon == null;
     public bool hasCube => cube != null;
     public bool hasRocket => rocket != null;
+    public bool hasDuck => duck != null;
+    public bool hasBalloon => balloon != null;
 
     public GridCell(int x, int y)
     {
         position = new Vector2Int(x, y);
         cube = null;
         rocket = null;
+
+        duck = null;
+
+        balloon = null;
     }
 
     public void SetCube(CubeController newCube)
     {
         cube = newCube;
-        rocket = null; // Clear rocket if placing cube
+        rocket = null;
+        duck = null;
         if (cube != null)
         {
             cube.SetGridPosition(position);
@@ -583,10 +624,32 @@ public class GridCell
     public void SetRocket(RocketController newRocket)
     {
         rocket = newRocket;
-        cube = null; // Clear cube if placing rocket
+        cube = null;
+        duck = null;
         if (rocket != null)
         {
             rocket.SetGridPosition(position);
+        }
+    }
+
+    public void SetBalloon(BalloonController newBalloon)
+    {
+        Clear();
+        balloon = newBalloon;
+        if (balloon != null)
+        {
+            balloon.SetGridPosition(position);
+        }
+    }
+
+    public void SetDuck(DuckController newDuck)
+    {
+        duck = newDuck;
+        cube = null;
+        rocket = null;
+        if (duck != null)
+        {
+            duck.SetGridPosition(position);
         }
     }
 
@@ -604,10 +667,23 @@ public class GridCell
         rocket = null;
     }
 
+    public void ClearBalloon()
+    {
+        balloon = null;
+    }
+
+    public void ClearDuck()
+    {
+        duck = null;
+    }
+
     public void Clear()
     {
         ClearCube();
         ClearRocket();
+
+        ClearDuck();
+        ClearBalloon();
     }
 }
 
@@ -626,17 +702,18 @@ public class GridManager : MonoBehaviour
     public Transform gridParent;
     public GameObject cubePrefab;
 
+    public GameObject duckPrefab;
+
+    public GameObject balloonPrefab;
+
     private GridCell[,] grid;
     private GameConfig config;
     private Camera mainCamera;
-    private bool isProcessingMatches = false; // Prevent multiple simultaneous matches
+    private bool isProcessingMatches = false;
 
     public int Width => config.gridWidth;
     public int Height => config.gridHeight;
-
-    // MODIFICATION: Added a constant to control the vertical overlap.
-    // A smaller value (e.g., 0.3f) makes the grid more compact vertically.
-    private const float VerticalOverlapFactor = 1.1f;
+    private const float VerticalOverlapFactor = 1f;
 
     void Awake()
     {
@@ -646,32 +723,57 @@ public class GridManager : MonoBehaviour
         {
             CreateCubePrefab();
         }
+
+        if (balloonPrefab == null)
+            CreateBalloonPrefab();
+
+        if (duckPrefab == null)
+        {
+            CreateDuckPrefab();
+        }
     }
 
     void CreateCubePrefab()
     {
         cubePrefab = new GameObject("CubePrefab");
-
         SpriteRenderer sr = cubePrefab.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        // Base sorting order is now determined dynamically.
-        // We set it to a default here, but it will be overridden.
         sr.sortingOrder = 0;
         sr.color = new Color(1f, 1f, 1f, 1f);
         sr.material = new Material(Shader.Find("Sprites/Default"));
-
         BoxCollider2D collider = cubePrefab.AddComponent<BoxCollider2D>();
         collider.size = Vector2.one;
-
         cubePrefab.AddComponent<CubeController>();
         cubePrefab.SetActive(false);
         DontDestroyOnLoad(cubePrefab);
     }
 
+    void CreateDuckPrefab()
+    {
+        duckPrefab = new GameObject("DuckPrefab");
+        SpriteRenderer sr = duckPrefab.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = 5;
+        sr.color = Color.white;
+        duckPrefab.AddComponent<DuckController>();
+        duckPrefab.SetActive(false);
+        DontDestroyOnLoad(duckPrefab);
+    }
+
+    void CreateBalloonPrefab()
+    {
+        balloonPrefab = new GameObject("BalloonPrefab");
+        SpriteRenderer sr = balloonPrefab.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = 5;
+        balloonPrefab.AddComponent<BalloonController>();
+        balloonPrefab.SetActive(false);
+        DontDestroyOnLoad(balloonPrefab);
+    }
+
     public void InitializeGrid()
     {
         config = GameManager.Instance.gameConfig;
-
         if (config == null)
         {
             Debug.LogError("GameConfig is null!");
@@ -691,7 +793,6 @@ public class GridManager : MonoBehaviour
 
         isProcessingMatches = false;
         grid = new GridCell[Width, Height];
-
         for (int x = 0; x < Width; x++)
         {
             for (int y = 0; y < Height; y++)
@@ -702,6 +803,12 @@ public class GridManager : MonoBehaviour
 
         SetupCameraAndGrid();
         FillInitialGrid();
+
+        SpawnInitialDucks();
+
+        SpawnInitialBalloons();
+
+        CheckAndCollectBottomRowDucks();
     }
 
     void SetupCameraAndGrid()
@@ -709,7 +816,6 @@ public class GridManager : MonoBehaviour
         float totalWidth = Width * config.cellSize + (Width - 1) * config.gridSpacing;
         float verticalStep = config.cellSize * VerticalOverlapFactor;
         float totalHeight = ((Height - 1) * verticalStep) + config.cellSize;
-
         Vector3 gridOffset = new Vector3(
             -totalWidth * 0.5f + config.cellSize * 0.5f,
             -totalHeight * 0.5f + config.cellSize * 0.5f,
@@ -720,7 +826,6 @@ public class GridManager : MonoBehaviour
         {
             gridParent.position = gridOffset;
         }
-
         float requiredSize = Mathf.Max(totalHeight * 0.7f, totalWidth * 0.6f / mainCamera.aspect);
         mainCamera.orthographicSize = requiredSize;
         mainCamera.transform.position = new Vector3(0, 0, -10f);
@@ -735,6 +840,74 @@ public class GridManager : MonoBehaviour
                 CreateRandomCube(x, y);
             }
         }
+    }
+
+    void SpawnInitialDucks()
+    {
+        int ducksToPlace = config.ducksInLevel;
+        if (ducksToPlace <= 0)
+            return;
+
+        List<Vector2Int> availableCells = new List<Vector2Int>();
+        // Prevent spawning in bottom row (y = 0) by starting from y = 1
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 1; y < Height; y++) // Start from y = 1, not y = 0
+            {
+                if (grid[x, y].isEmpty || grid[x, y].hasCube)
+                {
+                    availableCells.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        for (int i = 0; i < ducksToPlace; i++)
+        {
+            if (availableCells.Count == 0)
+            {
+                Debug.LogWarning("Not enough available cells to place all ducks.");
+                break;
+            }
+
+            int randomIndex = Random.Range(0, availableCells.Count);
+            Vector2Int cellPos = availableCells[randomIndex];
+            availableCells.RemoveAt(randomIndex);
+
+            if (grid[cellPos.x, cellPos.y].hasCube)
+            {
+                Destroy(grid[cellPos.x, cellPos.y].cube.gameObject);
+                grid[cellPos.x, cellPos.y].ClearCube();
+            }
+
+            DuckController newDuck = CreateDuck(cellPos.x, cellPos.y);
+        }
+    }
+
+    DuckController CreateDuck(int x, int y)
+    {
+        if (duckPrefab == null)
+        {
+            Debug.LogError("DuckPrefab is not set!");
+            return null;
+        }
+        GameObject duckObj = Instantiate(duckPrefab, gridParent);
+        duckObj.SetActive(true);
+
+        SpriteRenderer sr = duckObj.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingOrder = y;
+        }
+
+        DuckController duck = duckObj.GetComponent<DuckController>();
+        duck.Initialize(new Vector2Int(x, y));
+
+        Vector3 worldPos = GridToWorldPosition(x, y);
+        duck.transform.position = worldPos;
+
+        grid[x, y].SetDuck(duck);
+
+        return duck;
     }
 
     void CreateRandomCube(int x, int y)
@@ -756,15 +929,11 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // --- CORRECTED LOGIC: Set Sorting Order based on row index ---
         SpriteRenderer sr = cubeObj.GetComponent<SpriteRenderer>();
         if (sr != null)
         {
-            // By setting order to 'y', higher rows (larger y) get a higher
-            // sorting order, making them render ON TOP of lower rows.
             sr.sortingOrder = y;
         }
-        // --- END OF CORRECTION ---
 
         int randomColorIndex = Random.Range(0, config.cubeSprites.Length);
         cube.Initialize(randomColorIndex, config.cubeSprites[randomColorIndex]);
@@ -779,7 +948,6 @@ public class GridManager : MonoBehaviour
     public Vector3 GridToWorldPosition(int x, int y)
     {
         float worldX = x * (config.cellSize + config.gridSpacing);
-        // Vertical position uses the overlap factor for a stacked look.
         float worldY = y * (config.cellSize * VerticalOverlapFactor);
         return gridParent.position + new Vector3(worldX, worldY, 0);
     }
@@ -851,7 +1019,6 @@ public class GridManager : MonoBehaviour
         if (clickedCell == null)
             return;
 
-        // Handle rocket click
         if (clickedCell.hasRocket)
         {
             if (GameManager.Instance.TryMakeMove())
@@ -861,7 +1028,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // Handle cube click
         if (clickedCell.hasCube)
         {
             List<GridCell> matches = FindMatches(x, y);
@@ -882,50 +1048,42 @@ public class GridManager : MonoBehaviour
         RocketController rocket = rocketCell.rocket;
         Vector2Int rocketGridPos = rocket.GridPosition;
 
-        // Immediately clear the rocket from the grid data model
         rocketCell.ClearRocket();
 
-        // ---- ROCKET ANIMATION ----
         Vector3 targetPosition;
         if (rocket.direction == RocketController.RocketDirection.Horizontal)
         {
-            // Set target to just off the left side of the grid
             targetPosition = GridToWorldPosition(-1, rocketGridPos.y);
         }
-        else // Vertical
+        else
         {
-            // Set target to just off the top side of the grid
             targetPosition = GridToWorldPosition(rocketGridPos.x, Height);
         }
 
-        // Call the animation coroutine on the rocket and wait for it to complete.
-        // The rocket will destroy itself upon arrival.
         yield return StartCoroutine(rocket.AnimateTravel(targetPosition));
-        // ---- END ANIMATION ----
 
-
-        // ---- DESTRUCTION LOGIC ----
         List<GridCell> cellsToDestroy = new List<GridCell>();
-
         if (rocket.direction == RocketController.RocketDirection.Horizontal)
         {
-            for (int x = 0; x < Width; x++)
+            for (int ix = 0; ix < Width; ix++)
             {
-                cellsToDestroy.Add(GetCell(x, rocketGridPos.y));
+                cellsToDestroy.Add(GetCell(ix, rocketGridPos.y));
             }
         }
-        else // Vertical
+        else
         {
-            for (int y = 0; y < Height; y++)
+            for (int iy = 0; iy < Height; iy++)
             {
-                cellsToDestroy.Add(GetCell(rocketGridPos.x, y));
+                cellsToDestroy.Add(GetCell(rocketGridPos.x, iy));
             }
         }
 
-        // Explode all cubes in the determined path
         foreach (var cell in cellsToDestroy)
         {
-            if (cell != null && cell.hasCube)
+            if (cell == null)
+                continue;
+
+            if (cell.hasCube)
             {
                 GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
                 GameManager.Instance.effectsManager.PlayExplosionEffect(
@@ -935,8 +1093,7 @@ public class GridManager : MonoBehaviour
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
             }
-            // Also destroy any other rockets in the path
-            if (cell != null && cell.hasRocket)
+            if (cell.hasRocket)
             {
                 GameManager.Instance.effectsManager.PlayExplosionEffect(
                     cell.rocket.transform.position
@@ -949,13 +1106,82 @@ public class GridManager : MonoBehaviour
         GameManager.Instance.audioManager.PlayExplosionSound();
         yield return new WaitForSeconds(config.explosionDuration);
 
-        // ---- GRID REFILL ----
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
-        UpdateAllCubePositions();
+        CheckAndCollectBottomRowDucks();
+
+        UpdateAllObjectPositions();
 
         isProcessingMatches = false;
-        Debug.Log("Rocket activation processing complete.");
+    }
+
+    void SpawnInitialBalloons()
+    {
+        int balloonsToPlace = config.balloonsInLevel;
+        if (balloonsToPlace <= 0)
+            return;
+
+        List<Vector2Int> availableCells = new List<Vector2Int>();
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = Height / 2; y < Height; y++)
+            {
+                if (grid[x, y].isEmpty || grid[x, y].hasCube)
+                {
+                    availableCells.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        for (int i = 0; i < balloonsToPlace; i++)
+        {
+            if (availableCells.Count == 0)
+                break;
+
+            int randomIndex = Random.Range(0, availableCells.Count);
+            Vector2Int cellPos = availableCells[randomIndex];
+            availableCells.RemoveAt(randomIndex);
+
+            if (grid[cellPos.x, cellPos.y].hasCube)
+            {
+                Destroy(grid[cellPos.x, cellPos.y].cube.gameObject);
+                grid[cellPos.x, cellPos.y].ClearCube();
+            }
+            CreateBalloon(cellPos.x, cellPos.y);
+        }
+    }
+
+    private void CheckAndCollectBottomRowDucks()
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            GridCell cell = grid[x, 0]; // Bottom row is y = 0
+            if (cell != null && cell.hasDuck && cell.duck != null)
+            {
+                // Collect the duck immediately
+                DuckController duck = cell.duck;
+                cell.ClearDuck(); // Clear from grid first to prevent double collection
+                duck.CollectDuck();
+            }
+        }
+    }
+
+    void CreateBalloon(int x, int y)
+    {
+        if (balloonPrefab == null)
+            return;
+
+        GameObject balloonObj = Instantiate(balloonPrefab, gridParent);
+        balloonObj.SetActive(true);
+
+        SpriteRenderer sr = balloonObj.GetComponent<SpriteRenderer>();
+        if (sr != null)
+            sr.sortingOrder = y;
+
+        BalloonController balloon = balloonObj.GetComponent<BalloonController>();
+        balloon.Initialize(new Vector2Int(x, y));
+        balloon.transform.position = GridToWorldPosition(x, y);
+        grid[x, y].SetBalloon(balloon);
     }
 
     IEnumerator ProcessMatches(List<GridCell> matches, Vector2Int clickPosition)
@@ -966,17 +1192,38 @@ public class GridManager : MonoBehaviour
         GameManager.Instance.CollectCube(colorIndex, matches.Count);
 
         bool shouldCreateRocket = matches.Count >= config.rocketTriggerSize;
-
-        // Store rocket position before destroying cubes
         Vector3 rocketWorldPosition = GridToWorldPosition(clickPosition.x, clickPosition.y);
 
-        // Explode cubes with effects
+        List<GridCell> adjacentBalloons = new List<GridCell>();
+
+        foreach (var matchCell in matches)
+        {
+            Vector2Int[] adjacentPositions =
+            {
+                new Vector2Int(matchCell.position.x + 1, matchCell.position.y),
+                new Vector2Int(matchCell.position.x - 1, matchCell.position.y),
+                new Vector2Int(matchCell.position.x, matchCell.position.y + 1),
+                new Vector2Int(matchCell.position.x, matchCell.position.y - 1)
+            };
+
+            foreach (var pos in adjacentPositions)
+            {
+                GridCell adjacentCell = GetCell(pos.x, pos.y);
+                if (
+                    adjacentCell != null
+                    && adjacentCell.hasBalloon
+                    && !adjacentBalloons.Contains(adjacentCell)
+                )
+                {
+                    adjacentBalloons.Add(adjacentCell);
+                }
+            }
+        }
         foreach (var cell in matches)
         {
             if (cell.cube != null)
             {
                 Vector3 explosionPosition = cell.cube.transform.position;
-
                 if (!float.IsNaN(explosionPosition.x) && !float.IsNaN(explosionPosition.y))
                 {
                     GameManager.Instance.effectsManager.PlayExplosionEffect(
@@ -984,28 +1231,34 @@ public class GridManager : MonoBehaviour
                         cell.cube.ColorIndex
                     );
                 }
-
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
             }
         }
 
-        GameManager.Instance.audioManager.PlayExplosionSound();
+        foreach (var balloonCell in adjacentBalloons)
+        {
+            if (balloonCell.balloon != null)
+            {
+                balloonCell.balloon.Explode();
+                balloonCell.ClearBalloon();
+            }
+        }
 
+        GameManager.Instance.audioManager.PlayExplosionSound();
         yield return new WaitForSeconds(config.explosionDuration);
 
-        // Create rocket AFTER clearing the cell but BEFORE gravity
         if (shouldCreateRocket)
         {
             CreateRocket(clickPosition, rocketWorldPosition);
         }
 
-        // Apply gravity and fill grid
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
 
-        // CRITICAL: Update all cube positions after movement
-        UpdateAllCubePositions();
+        CheckAndCollectBottomRowDucks();
+
+        UpdateAllObjectPositions();
 
         isProcessingMatches = false;
     }
@@ -1022,99 +1275,134 @@ public class GridManager : MonoBehaviour
 
         SpriteRenderer sr = rocketObj.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        sr.sortingOrder = 6; // Above cubes
+        sr.sortingOrder = 6;
 
         BoxCollider2D col = rocketObj.AddComponent<BoxCollider2D>();
         col.size = Vector2.one;
 
         RocketController rocket = rocketObj.AddComponent<RocketController>();
         rocket.Initialize(direction, gridPosition);
-
-        // Position rocket at the exact world position
         rocketObj.transform.position = worldPosition;
 
-        // CRITICAL: Place rocket in grid system
         GridCell cell = GetCell(gridPosition.x, gridPosition.y);
         if (cell != null)
         {
             cell.SetRocket(rocket);
         }
-
-        Debug.Log($"Created {direction} rocket at grid {gridPosition}, world {worldPosition}");
     }
 
-    // CRITICAL: This method ensures all cubes have correct grid positions
-    void UpdateAllCubePositions()
+    void UpdateAllObjectPositions()
     {
         for (int x = 0; x < Width; x++)
         {
             for (int y = 0; y < Height; y++)
             {
                 GridCell cell = grid[x, y];
+                Vector3 correctPosition = GridToWorldPosition(x, y);
 
                 if (cell.hasCube && cell.cube != null)
                 {
                     cell.cube.SetGridPosition(new Vector2Int(x, y));
-                    Vector3 correctPosition = GridToWorldPosition(x, y);
                     cell.cube.transform.position = correctPosition;
                 }
 
+                if (cell.hasBalloon && cell.balloon != null)
+                {
+                    cell.balloon.SetGridPosition(new Vector2Int(x, y));
+                    cell.balloon.transform.position = correctPosition;
+                }
                 if (cell.hasRocket && cell.rocket != null)
                 {
                     cell.rocket.SetGridPosition(new Vector2Int(x, y));
-                    Vector3 correctPosition = GridToWorldPosition(x, y);
                     cell.rocket.transform.position = correctPosition;
+                }
+
+                if (cell.hasDuck && cell.duck != null)
+                {
+                    cell.duck.SetGridPosition(new Vector2Int(x, y));
+                    cell.duck.transform.position = correctPosition;
                 }
             }
         }
-        Debug.Log("Updated all cube and rocket positions");
     }
 
     IEnumerator ApplyGravity()
     {
-        bool cubesMoved = true;
-        while (cubesMoved)
+        bool itemsMoved = true;
+        while (itemsMoved)
         {
-            cubesMoved = false;
+            itemsMoved = false;
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height - 1; y++)
                 {
                     GridCell currentCell = grid[x, y];
-                    if (!currentCell.isEmpty || currentCell.hasRocket)
+
+                    if (!currentCell.isEmpty)
                         continue;
 
                     for (int yAbove = y + 1; yAbove < Height; yAbove++)
                     {
                         GridCell aboveCell = grid[x, yAbove];
+
+                        if (aboveCell.hasDuck)
+                        {
+                            DuckController duckToMove = aboveCell.duck;
+                            currentCell.SetDuck(duckToMove);
+                            aboveCell.ClearDuck();
+
+                            SpriteRenderer sr = duckToMove.GetComponent<SpriteRenderer>();
+                            if (sr != null)
+                                sr.sortingOrder = y;
+
+                            StartCoroutine(
+                                AnimateObjectFall(duckToMove.transform, GridToWorldPosition(x, y))
+                            );
+                            itemsMoved = true;
+
+                            break;
+                        }
+
+                        if (aboveCell.hasBalloon)
+                        {
+                            BalloonController balloonToMove = aboveCell.balloon;
+                            currentCell.SetBalloon(balloonToMove);
+                            aboveCell.ClearBalloon();
+
+                            SpriteRenderer sr = balloonToMove.GetComponent<SpriteRenderer>();
+                            if (sr != null)
+                                sr.sortingOrder = y;
+
+                            StartCoroutine(
+                                AnimateObjectFall(
+                                    balloonToMove.transform,
+                                    GridToWorldPosition(x, y)
+                                )
+                            );
+                            itemsMoved = true;
+                            break;
+                        }
+
                         if (aboveCell.hasCube)
                         {
-                            currentCell.SetCube(aboveCell.cube);
+                            CubeController cubeToMove = aboveCell.cube;
+                            currentCell.SetCube(cubeToMove);
                             aboveCell.ClearCube();
 
-                            if (currentCell.cube != null)
-                            {
-                                // --- CORRECTED LOGIC: Update sorting order when a cube falls ---
-                                SpriteRenderer sr = currentCell.cube.GetComponent<SpriteRenderer>();
-                                if (sr != null)
-                                {
-                                    // The cube is now in a new, lower row, so its render
-                                    // order must be updated to match.
-                                    sr.sortingOrder = y;
-                                }
-                                // --- END OF CORRECTION ---
+                            SpriteRenderer sr = cubeToMove.GetComponent<SpriteRenderer>();
+                            if (sr != null)
+                                sr.sortingOrder = y;
 
-                                StartCoroutine(
-                                    AnimateCubeFall(currentCell.cube, GridToWorldPosition(x, y))
-                                );
-                            }
-                            cubesMoved = true;
+                            StartCoroutine(
+                                AnimateObjectFall(cubeToMove.transform, GridToWorldPosition(x, y))
+                            );
+                            itemsMoved = true;
                             break;
                         }
                     }
                 }
             }
-            if (cubesMoved)
+            if (itemsMoved)
             {
                 yield return new WaitForSeconds(0.1f);
             }
@@ -1123,51 +1411,48 @@ public class GridManager : MonoBehaviour
 
     IEnumerator FillEmptySpaces()
     {
-        // Fill from top to bottom
         for (int x = 0; x < Width; x++)
         {
             for (int y = Height - 1; y >= 0; y--)
             {
                 GridCell cell = grid[x, y];
-                // Only fill if cell is completely empty (no cube AND no rocket)
+
                 if (cell.isEmpty)
                 {
                     CreateRandomCube(x, y);
 
-                    // Animate new cube falling from above
                     if (cell.hasCube && cell.cube != null)
                     {
                         Vector3 startPos = GridToWorldPosition(x, Height);
                         Vector3 endPos = GridToWorldPosition(x, y);
                         cell.cube.transform.position = startPos;
-                        StartCoroutine(AnimateCubeFall(cell.cube, endPos));
+                        StartCoroutine(AnimateObjectFall(cell.cube.transform, endPos));
                     }
                 }
             }
         }
-
         yield return new WaitForSeconds(config.cubeFallSpeed / 5f);
     }
 
-    IEnumerator AnimateCubeFall(CubeController cube, Vector3 targetPosition)
+    IEnumerator AnimateObjectFall(Transform objTransform, Vector3 targetPosition)
     {
-        if (cube == null)
+        if (objTransform == null)
             yield break;
 
-        Vector3 startPosition = cube.transform.position;
+        Vector3 startPosition = objTransform.position;
         float journey = 0f;
         float speed = config.cubeFallSpeed;
 
-        while (journey <= 1f && cube != null)
+        while (journey <= 1f && objTransform != null)
         {
             journey += Time.deltaTime * speed;
-            cube.transform.position = Vector3.Lerp(startPosition, targetPosition, journey);
+            objTransform.position = Vector3.Lerp(startPosition, targetPosition, journey);
             yield return null;
         }
 
-        if (cube != null)
+        if (objTransform != null)
         {
-            cube.transform.position = targetPosition;
+            objTransform.position = targetPosition;
         }
     }
 }
@@ -1216,15 +1501,14 @@ public struct GridPosition
         return x.GetHashCode() ^ y.GetHashCode();
     }
 
-    // Get adjacent positions (up, down, left, right)
     public GridPosition[] GetAdjacent()
     {
         return new GridPosition[]
         {
-            new GridPosition(x, y + 1), // Up
-            new GridPosition(x, y - 1), // Down
-            new GridPosition(x - 1, y), // Left
-            new GridPosition(x + 1, y) // Right
+            new GridPosition(x, y + 1),
+            new GridPosition(x, y - 1),
+            new GridPosition(x - 1, y),
+            new GridPosition(x + 1, y)
         };
     }
 }
@@ -1239,35 +1523,35 @@ using UnityEngine;
 public class BalloonController : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
-    private GridManager gridManager;
     public Vector2Int GridPosition { get; private set; }
 
     void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        gridManager = FindObjectOfType<GridManager>();
     }
 
     public void Initialize(Vector2Int gridPos)
     {
         GridPosition = gridPos;
-        spriteRenderer.sprite = GameManager.Instance.gameConfig.balloonSprite;
-        transform.position = gridManager.GridToWorldPosition(gridPos.x, gridPos.y);
+        if (GameManager.Instance != null && GameManager.Instance.gameConfig != null)
+        {
+            spriteRenderer.sprite = GameManager.Instance.gameConfig.balloonSprite;
+        }
+        gameObject.name = $"Balloon_{gridPos.x}_{gridPos.y}";
     }
 
-    public void ExplodeBalloon()
+    public void SetGridPosition(Vector2Int newPos)
     {
-        // Play balloon sound and effects
+        GridPosition = newPos;
+        gameObject.name = $"Balloon_{newPos.x}_{newPos.y}";
+    }
+
+    public void Explode()
+    {
+        GameManager.Instance.CollectBalloon();
+
         GameManager.Instance.audioManager.PlayBalloonSound();
         GameManager.Instance.effectsManager.PlayExplosionEffect(transform.position);
-
-        // Remove from grid if needed
-        GridCell cell = gridManager.GetCell(GridPosition.x, GridPosition.y);
-        if (cell != null)
-        {
-            // If balloon counts as goal, collect it
-            // GameManager.Instance.CollectBalloon();
-        }
 
         Destroy(gameObject);
     }
@@ -1284,6 +1568,7 @@ public class DuckController : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
     private GridManager gridManager;
+    private bool isCollected = false;
     public Vector2Int GridPosition { get; private set; }
 
     void Awake()
@@ -1297,31 +1582,35 @@ public class DuckController : MonoBehaviour
         GridPosition = gridPos;
         spriteRenderer.sprite = GameManager.Instance.gameConfig.duckSprite;
         transform.position = gridManager.GridToWorldPosition(gridPos.x, gridPos.y);
+        gameObject.name = $"Duck_{gridPos.x}_{gridPos.y}";
+        isCollected = false;
     }
 
-    public void CheckIfAtBottom()
+    public void CollectDuck()
     {
-        if (GridPosition.y == 0) // Bottom row
+        if (isCollected || this == null || gameObject == null)
+            return;
+
+        isCollected = true;
+
+        GameManager.Instance.audioManager.PlayDuckSound();
+        GameManager.Instance.CollectDuck();
+        GameManager.Instance.effectsManager.PlayExplosionEffect(transform.position);
+
+        if (Application.isPlaying)
         {
-            CollectDuck();
+            Destroy(gameObject);
+        }
+        else
+        {
+            DestroyImmediate(gameObject);
         }
     }
 
-    void CollectDuck()
-    {
-        // Play duck sound and collection effects
-        GameManager.Instance.audioManager.PlayDuckSound();
-
-        // Collect for goals if applicable
-        // GameManager.Instance.CollectDuck();
-
-        Destroy(gameObject);
-    }
-
-    public void UpdateGridPosition(Vector2Int newPos)
+    public void SetGridPosition(Vector2Int newPos)
     {
         GridPosition = newPos;
-        CheckIfAtBottom();
+        gameObject.name = $"Duck_{newPos.x}_{newPos.y}";
     }
 }
 
@@ -1364,7 +1653,6 @@ public class RocketController : MonoBehaviour
         direction = dir;
         GridPosition = gridPos;
 
-        // Set appropriate sprite
         if (direction == RocketDirection.Horizontal)
         {
             spriteRenderer.sprite = config.rocketHorizontalSprite;
@@ -1374,12 +1662,10 @@ public class RocketController : MonoBehaviour
             spriteRenderer.sprite = config.rocketVerticalSprite;
         }
 
-        // Set proper sorting and rendering
         spriteRenderer.sortingLayerName = "Default";
-        spriteRenderer.sortingOrder = 6; // Above cubes
+        spriteRenderer.sortingOrder = 6;
         spriteRenderer.color = Color.white;
 
-        // Ensure collider is properly set up
         if (rocketCollider != null)
         {
             rocketCollider.enabled = true;
@@ -1407,19 +1693,12 @@ public class RocketController : MonoBehaviour
 
         if (gridManager != null)
         {
-            // Delegate click handling to the central GridManager
             gridManager.HandleCubeClick(GridPosition.x, GridPosition.y);
         }
     }
 
-    /// <summary>
-    /// Animates the rocket's travel to a target position and then destroys it.
-    /// </summary>
-    /// <param name="targetPosition">The world position to travel to.</param>
-    /// <returns>IEnumerator for the coroutine.</returns>
     public IEnumerator AnimateTravel(Vector3 targetPosition)
     {
-        // Disable the collider to prevent clicking it again while it's moving
         if (rocketCollider != null)
         {
             rocketCollider.enabled = false;
@@ -1428,7 +1707,6 @@ public class RocketController : MonoBehaviour
         Vector3 startPosition = transform.position;
         float distance = Vector3.Distance(startPosition, targetPosition);
 
-        // Ensure rocketMoveSpeed is not zero to avoid division by zero errors
         if (config.rocketMoveSpeed <= 0)
         {
             Debug.LogWarning("Rocket move speed is zero or less. Snapping to target.");
@@ -1442,18 +1720,15 @@ public class RocketController : MonoBehaviour
 
         while (elapsed < duration)
         {
-            // Move the rocket smoothly over time
             transform.position = Vector3.Lerp(startPosition, targetPosition, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        // Ensure it ends exactly at the target and then destroy it
         transform.position = targetPosition;
         Destroy(gameObject);
     }
 
-    // Visual feedback on hover
     void OnMouseEnter()
     {
         if (spriteRenderer != null)
@@ -1484,11 +1759,10 @@ public class GoalUIItem : MonoBehaviour
 {
     [Header("UI References")]
     public Image goalIcon;
-    public TextMeshProUGUI goalTextTMP; // Using TextMeshPro
+    public TextMeshProUGUI goalTextTMP;
 
     private LevelGoal currentGoal;
 
-    // Initialize the goal item with the starting target amount
     public void Initialize(LevelGoal goal, Sprite cubeSprite)
     {
         currentGoal = new LevelGoal
@@ -1504,44 +1778,36 @@ public class GoalUIItem : MonoBehaviour
         UpdateDisplay();
     }
 
-    // This is called by UIManager whenever a cube is collected
     public void UpdateGoal(LevelGoal goal)
     {
         int oldAmount = currentGoal != null ? currentGoal.currentAmount : 0;
-        currentGoal = goal; // Update the internal goal state
+        currentGoal = goal;
         UpdateDisplay();
 
-        // Animate only when progress is made
         if (goal.currentAmount > oldAmount)
         {
             AnimateGoalCollection();
         }
     }
 
-    // REWORKED: This method now displays the remaining amount
     void UpdateDisplay()
     {
         if (currentGoal == null)
             return;
 
-        // Calculate the remaining amount needed
         int remainingAmount = currentGoal.targetAmount - currentGoal.currentAmount;
         if (remainingAmount < 0)
-            remainingAmount = 0; // Prevent negative numbers
+            remainingAmount = 0;
 
-        // Update the text to show only the remaining amount
         if (goalTextTMP != null)
         {
             goalTextTMP.text = remainingAmount.ToString();
         }
 
-        // If the goal is complete, you could add extra feedback,
-        // like hiding the text or showing a checkmark.
         if (remainingAmount <= 0)
         {
-            // For example, hide the text when the goal is met.
             goalTextTMP.gameObject.SetActive(false);
-            // Optionally, change the icon to be grayed out
+
             if (goalIcon)
                 goalIcon.color = Color.gray;
         }
@@ -1549,7 +1815,6 @@ public class GoalUIItem : MonoBehaviour
 
     void AnimateGoalCollection()
     {
-        // Simple scale animation to give feedback
         StartCoroutine(ScaleAnimation());
     }
 
@@ -1559,14 +1824,12 @@ public class GoalUIItem : MonoBehaviour
         Vector3 targetScale = originalScale * 1.2f;
         float duration = 0.1f;
 
-        // Scale up
         for (float t = 0; t < 1; t += Time.deltaTime / duration)
         {
             transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
             yield return null;
         }
 
-        // Scale down
         for (float t = 0; t < 1; t += Time.deltaTime / duration)
         {
             transform.localScale = Vector3.Lerp(targetScale, originalScale, t);
@@ -1651,7 +1914,7 @@ public class UIManager : MonoBehaviour
             goalsRect.anchorMin = new Vector2(0.5f, 1);
             goalsRect.anchorMax = new Vector2(0.5f, 1);
             goalsRect.pivot = new Vector2(0.5f, 1);
-            goalsRect.anchoredPosition = new Vector2(25, -55);
+            goalsRect.anchoredPosition = new Vector2(50, -55);
             goalsRect.sizeDelta = new Vector2(350, 120);
         }
 
@@ -1668,37 +1931,79 @@ public class UIManager : MonoBehaviour
         }
 
         layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-        layoutGroup.spacing = 15;
+        layoutGroup.spacing = 25;
         layoutGroup.padding = new RectOffset(10, 10, 10, 10);
         layoutGroup.childControlWidth = false;
         layoutGroup.childControlHeight = false;
+
+        if (config.levelGoals == null)
+            return;
 
         foreach (var goal in config.levelGoals)
         {
             GameObject goalItemObj = CreateGoalItem(goal);
             goalUIItems.Add(goalItemObj.GetComponent<GoalUIItem>());
         }
+
+        int goalCount = config.levelGoals.Length;
+        if (goalCount > 3)
+        {
+            float containerWidth = goalsRect.sizeDelta.x;
+            float horizontalPadding = layoutGroup.padding.left + layoutGroup.padding.right;
+            float totalSpacing = layoutGroup.spacing * (goalCount - 1);
+            float availableWidth = containerWidth - horizontalPadding - totalSpacing;
+            float newSize = 75f;
+
+            float maxAllowedSize =
+                goalsRect.sizeDelta.y - (layoutGroup.padding.top + layoutGroup.padding.bottom);
+            newSize = Mathf.Min(newSize, maxAllowedSize);
+
+            foreach (var goalItem in goalUIItems)
+            {
+                RectTransform itemRect = goalItem.GetComponent<RectTransform>();
+                if (itemRect != null)
+                {
+                    itemRect.sizeDelta = new Vector2(newSize, newSize);
+                }
+            }
+        }
     }
 
-    // REWORKED: This function now positions the text to the bottom-right.
     GameObject CreateGoalItem(LevelGoal goal)
     {
-        GameObject goalItem = new GameObject($"GoalItem_{goal.colorIndex}");
+        GameObject goalItem = new GameObject($"GoalItem_{goal.goalType}");
         goalItem.transform.SetParent(goalsContainer, false);
         goalItem.AddComponent<RectTransform>().sizeDelta = new Vector2(110, 110);
 
         GameObject iconObj = new GameObject("Icon");
         iconObj.transform.SetParent(goalItem.transform, false);
         Image iconImage = iconObj.AddComponent<Image>();
-        iconImage.sprite = config.cubeSprites[goal.colorIndex];
-        iconImage.rectTransform.sizeDelta = new Vector2(110, 110); // Make icon fill the space
+
+        Sprite goalSprite = null;
+        switch (goal.goalType)
+        {
+            case GoalType.Cube:
+                if (goal.colorIndex < config.cubeSprites.Length)
+                {
+                    goalSprite = config.cubeSprites[goal.colorIndex];
+                }
+                break;
+            case GoalType.Duck:
+                goalSprite = config.duckSprite;
+                break;
+            case GoalType.Balloon:
+                goalSprite = config.balloonSprite;
+                break;
+        }
+        iconImage.sprite = goalSprite;
+
+        iconImage.rectTransform.sizeDelta = new Vector2(110, 110);
         iconImage.rectTransform.anchoredPosition = Vector2.zero;
 
         GameObject textObj = new GameObject("Text (TMP)");
         textObj.transform.SetParent(goalItem.transform, false);
         TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
 
-        // Set the initial text to be the total target amount
         tmpText.text = goal.targetAmount.ToString();
         tmpText.fontSize = 52;
         tmpText.color = new Color32(0, 0, 0, 255);
@@ -1706,29 +2011,19 @@ public class UIManager : MonoBehaviour
         tmpText.outlineWidth = 0.2f;
         tmpText.outlineColor = new Color32(255, 243, 224, 255);
 
-        // --- POSITIONING & ALIGNMENT CHANGES ---
         RectTransform textRect = textObj.GetComponent<RectTransform>();
-
-        // Anchor and pivot to the bottom-right of the parent (the icon)
         textRect.anchorMin = new Vector2(1, 0);
         textRect.anchorMax = new Vector2(1, 0);
         textRect.pivot = new Vector2(1, 0);
-
-        // Set the size of the text box
         textRect.sizeDelta = new Vector2(80, 50);
-
-        // Position with padding from the corner
         textRect.anchoredPosition = new Vector2(-5, 5);
-
-        // Align the text itself to the center of its own box for a clean look
         tmpText.alignment = TextAlignmentOptions.Center;
-
-        // --- END OF CHANGES ---
 
         GoalUIItem goalUIComponent = goalItem.AddComponent<GoalUIItem>();
         goalUIComponent.goalIcon = iconImage;
         goalUIComponent.goalTextTMP = tmpText;
-        goalUIComponent.Initialize(goal, config.cubeSprites[goal.colorIndex]);
+
+        goalUIComponent.Initialize(goal, goalSprite);
 
         return goalItem;
     }

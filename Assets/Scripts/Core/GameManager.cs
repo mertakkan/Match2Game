@@ -33,7 +33,6 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // Find references if not assigned
         if (gridManager == null)
             gridManager = FindObjectOfType<GridManager>();
         if (uiManager == null)
@@ -61,7 +60,6 @@ public class GameManager : MonoBehaviour
         currentMoves = gameConfig.movesPerLevel;
         currentGoals = new List<LevelGoal>();
 
-        // Copy goals from config
         if (gameConfig.levelGoals != null)
         {
             foreach (var goal in gameConfig.levelGoals)
@@ -69,6 +67,7 @@ public class GameManager : MonoBehaviour
                 currentGoals.Add(
                     new LevelGoal
                     {
+                        goalType = goal.goalType,
                         colorIndex = goal.colorIndex,
                         targetAmount = goal.targetAmount,
                         currentAmount = 0
@@ -104,14 +103,41 @@ public class GameManager : MonoBehaviour
     {
         foreach (var goal in currentGoals)
         {
-            if (goal.colorIndex == colorIndex)
+            if (goal.goalType == GoalType.Cube && goal.colorIndex == colorIndex)
             {
                 goal.currentAmount = Mathf.Min(goal.currentAmount + amount, goal.targetAmount);
                 uiManager.UpdateGoals(currentGoals);
                 break;
             }
         }
+        CheckWinCondition();
+    }
 
+    public void CollectDuck(int amount = 1)
+    {
+        foreach (var goal in currentGoals)
+        {
+            if (goal.goalType == GoalType.Duck)
+            {
+                goal.currentAmount = Mathf.Min(goal.currentAmount + amount, goal.targetAmount);
+                uiManager.UpdateGoals(currentGoals);
+                break;
+            }
+        }
+        CheckWinCondition();
+    }
+
+    public void CollectBalloon(int amount = 1)
+    {
+        foreach (var goal in currentGoals)
+        {
+            if (goal.goalType == GoalType.Balloon)
+            {
+                goal.currentAmount = Mathf.Min(goal.currentAmount + amount, goal.targetAmount);
+                uiManager.UpdateGoals(currentGoals);
+                break;
+            }
+        }
         CheckWinCondition();
     }
 

@@ -18,7 +18,6 @@ public class EffectsManager : MonoBehaviour
     {
         if (particleSystemPrefab == null && config.particleSprites.Length > 0)
         {
-            // Create particle system prefab programmatically
             GameObject prefab = new GameObject("CubeExplosionParticle");
             ParticleSystem ps = prefab.AddComponent<ParticleSystem>();
 
@@ -44,17 +43,15 @@ public class EffectsManager : MonoBehaviour
             velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
             velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(2f, 4f);
 
-            // Set texture renderer with proper material
             var renderer = ps.GetComponent<ParticleSystemRenderer>();
             renderer.material = new Material(Shader.Find("Sprites/Default"));
 
-            // Use the first particle sprite
             renderer.material.mainTexture = config.particleSprites[0].texture;
             renderer.sortingLayerName = "Default";
-            renderer.sortingOrder = 10; // Above cubes
+            renderer.sortingOrder = 10;
 
             particleSystemPrefab = prefab;
-            particleSystemPrefab.SetActive(false); // Keep it inactive as prefab
+            particleSystemPrefab.SetActive(false);
         }
     }
 
@@ -62,7 +59,6 @@ public class EffectsManager : MonoBehaviour
     {
         if (particleSystemPrefab != null)
         {
-            // Ensure position is valid and not NaN or infinity
             if (float.IsNaN(position.x) || float.IsNaN(position.y) || float.IsNaN(position.z))
             {
                 Debug.LogWarning("Invalid particle position detected, skipping effect");
@@ -72,17 +68,14 @@ public class EffectsManager : MonoBehaviour
             GameObject particle = Instantiate(particleSystemPrefab, position, Quaternion.identity);
             particle.SetActive(true);
 
-            // Set particle color based on cube color
             ParticleSystem ps = particle.GetComponent<ParticleSystem>();
             if (ps != null)
             {
                 var main = ps.main;
 
-                // Get color from cube color index
                 Color particleColor = GetColorFromIndex(colorIndex);
                 main.startColor = particleColor;
 
-                // Randomize particle sprite if we have multiple
                 var renderer = ps.GetComponent<ParticleSystemRenderer>();
                 if (config.particleSprites.Length > 1)
                 {
@@ -92,10 +85,8 @@ public class EffectsManager : MonoBehaviour
                         .texture;
                 }
 
-                // Play the particle system
                 ps.Play();
 
-                // Auto-destroy after particle lifetime
                 StartCoroutine(DestroyAfterDelay(particle, config.particleLifetime + 0.5f));
             }
         }
@@ -107,16 +98,21 @@ public class EffectsManager : MonoBehaviour
 
     Color GetColorFromIndex(int colorIndex)
     {
-        // Map color indices to actual colors - you can customize these
         Color[] colors =
         {
-            new Color(1f, 0.2f, 0.2f), // Red
-            new Color(0.2f, 0.2f, 1f), // Blue
-            new Color(0.2f, 1f, 0.2f), // Green
-            new Color(1f, 1f, 0.2f), // Yellow
-            new Color(1f, 0.2f, 1f) // Magenta
+            Color.yellow,
+            Color.red,
+            new Color(0f, 0.6f, 1f),
+            Color.green,
+            new Color(0.8f, 0.4f, 0.9f)
         };
-        return colorIndex < colors.Length ? colors[colorIndex] : Color.white;
+
+        if (colorIndex >= 0 && colorIndex < colors.Length)
+        {
+            return colors[colorIndex];
+        }
+
+        return Color.white;
     }
 
     IEnumerator DestroyAfterDelay(GameObject obj, float delay)

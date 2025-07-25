@@ -8,16 +8,17 @@ public class GridManager : MonoBehaviour
     public Transform gridParent;
     public GameObject cubePrefab;
 
+    public GameObject duckPrefab;
+
+    public GameObject balloonPrefab;
+
     private GridCell[,] grid;
     private GameConfig config;
     private Camera mainCamera;
-    private bool isProcessingMatches = false; // Prevent multiple simultaneous matches
+    private bool isProcessingMatches = false;
 
     public int Width => config.gridWidth;
     public int Height => config.gridHeight;
-
-    // MODIFICATION: Changed to a value less than 1.0 to create a "stacked" look.
-    // This makes rows overlap vertically.
     private const float VerticalOverlapFactor = 1f;
 
     void Awake()
@@ -28,32 +29,57 @@ public class GridManager : MonoBehaviour
         {
             CreateCubePrefab();
         }
+
+        if (balloonPrefab == null)
+            CreateBalloonPrefab();
+
+        if (duckPrefab == null)
+        {
+            CreateDuckPrefab();
+        }
     }
 
     void CreateCubePrefab()
     {
         cubePrefab = new GameObject("CubePrefab");
-
         SpriteRenderer sr = cubePrefab.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        // Base sorting order is now determined dynamically.
-        // We set it to a default here, but it will be overridden.
         sr.sortingOrder = 0;
         sr.color = new Color(1f, 1f, 1f, 1f);
         sr.material = new Material(Shader.Find("Sprites/Default"));
-
         BoxCollider2D collider = cubePrefab.AddComponent<BoxCollider2D>();
         collider.size = Vector2.one;
-
         cubePrefab.AddComponent<CubeController>();
         cubePrefab.SetActive(false);
         DontDestroyOnLoad(cubePrefab);
     }
 
+    void CreateDuckPrefab()
+    {
+        duckPrefab = new GameObject("DuckPrefab");
+        SpriteRenderer sr = duckPrefab.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = 5;
+        sr.color = Color.white;
+        duckPrefab.AddComponent<DuckController>();
+        duckPrefab.SetActive(false);
+        DontDestroyOnLoad(duckPrefab);
+    }
+
+    void CreateBalloonPrefab()
+    {
+        balloonPrefab = new GameObject("BalloonPrefab");
+        SpriteRenderer sr = balloonPrefab.AddComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = 5;
+        balloonPrefab.AddComponent<BalloonController>();
+        balloonPrefab.SetActive(false);
+        DontDestroyOnLoad(balloonPrefab);
+    }
+
     public void InitializeGrid()
     {
         config = GameManager.Instance.gameConfig;
-
         if (config == null)
         {
             Debug.LogError("GameConfig is null!");
@@ -73,7 +99,6 @@ public class GridManager : MonoBehaviour
 
         isProcessingMatches = false;
         grid = new GridCell[Width, Height];
-
         for (int x = 0; x < Width; x++)
         {
             for (int y = 0; y < Height; y++)
@@ -84,15 +109,19 @@ public class GridManager : MonoBehaviour
 
         SetupCameraAndGrid();
         FillInitialGrid();
+
+        SpawnInitialDucks();
+
+        SpawnInitialBalloons();
+
+        CheckAndCollectBottomRowDucks();
     }
 
     void SetupCameraAndGrid()
     {
         float totalWidth = Width * config.cellSize + (Width - 1) * config.gridSpacing;
-        // Use the new overlap factor to calculate the visual height of the grid
         float verticalStep = config.cellSize * VerticalOverlapFactor;
         float totalHeight = ((Height - 1) * verticalStep) + config.cellSize;
-
         Vector3 gridOffset = new Vector3(
             -totalWidth * 0.5f + config.cellSize * 0.5f,
             -totalHeight * 0.5f + config.cellSize * 0.5f,
@@ -103,7 +132,6 @@ public class GridManager : MonoBehaviour
         {
             gridParent.position = gridOffset;
         }
-
         float requiredSize = Mathf.Max(totalHeight * 0.7f, totalWidth * 0.6f / mainCamera.aspect);
         mainCamera.orthographicSize = requiredSize;
         mainCamera.transform.position = new Vector3(0, 0, -10f);
@@ -118,6 +146,74 @@ public class GridManager : MonoBehaviour
                 CreateRandomCube(x, y);
             }
         }
+    }
+
+    void SpawnInitialDucks()
+    {
+        int ducksToPlace = config.ducksInLevel;
+        if (ducksToPlace <= 0)
+            return;
+
+        List<Vector2Int> availableCells = new List<Vector2Int>();
+        // Prevent spawning in bottom row (y = 0) by starting from y = 1
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 1; y < Height; y++) // Start from y = 1, not y = 0
+            {
+                if (grid[x, y].isEmpty || grid[x, y].hasCube)
+                {
+                    availableCells.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        for (int i = 0; i < ducksToPlace; i++)
+        {
+            if (availableCells.Count == 0)
+            {
+                Debug.LogWarning("Not enough available cells to place all ducks.");
+                break;
+            }
+
+            int randomIndex = Random.Range(0, availableCells.Count);
+            Vector2Int cellPos = availableCells[randomIndex];
+            availableCells.RemoveAt(randomIndex);
+
+            if (grid[cellPos.x, cellPos.y].hasCube)
+            {
+                Destroy(grid[cellPos.x, cellPos.y].cube.gameObject);
+                grid[cellPos.x, cellPos.y].ClearCube();
+            }
+
+            DuckController newDuck = CreateDuck(cellPos.x, cellPos.y);
+        }
+    }
+
+    DuckController CreateDuck(int x, int y)
+    {
+        if (duckPrefab == null)
+        {
+            Debug.LogError("DuckPrefab is not set!");
+            return null;
+        }
+        GameObject duckObj = Instantiate(duckPrefab, gridParent);
+        duckObj.SetActive(true);
+
+        SpriteRenderer sr = duckObj.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingOrder = y;
+        }
+
+        DuckController duck = duckObj.GetComponent<DuckController>();
+        duck.Initialize(new Vector2Int(x, y));
+
+        Vector3 worldPos = GridToWorldPosition(x, y);
+        duck.transform.position = worldPos;
+
+        grid[x, y].SetDuck(duck);
+
+        return duck;
     }
 
     void CreateRandomCube(int x, int y)
@@ -139,15 +235,11 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // --- SORTING LOGIC ---
-        // Set sorting order based on the row (y). Higher rows get a higher
-        // value, making them render ON TOP of lower rows.
         SpriteRenderer sr = cubeObj.GetComponent<SpriteRenderer>();
         if (sr != null)
         {
             sr.sortingOrder = y;
         }
-        // --- END OF LOGIC ---
 
         int randomColorIndex = Random.Range(0, config.cubeSprites.Length);
         cube.Initialize(randomColorIndex, config.cubeSprites[randomColorIndex]);
@@ -162,7 +254,6 @@ public class GridManager : MonoBehaviour
     public Vector3 GridToWorldPosition(int x, int y)
     {
         float worldX = x * (config.cellSize + config.gridSpacing);
-        // Vertical position now uses the overlap factor for a stacked look.
         float worldY = y * (config.cellSize * VerticalOverlapFactor);
         return gridParent.position + new Vector3(worldX, worldY, 0);
     }
@@ -234,7 +325,6 @@ public class GridManager : MonoBehaviour
         if (clickedCell == null)
             return;
 
-        // Handle rocket click
         if (clickedCell.hasRocket)
         {
             if (GameManager.Instance.TryMakeMove())
@@ -244,7 +334,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // Handle cube click
         if (clickedCell.hasCube)
         {
             List<GridCell> matches = FindMatches(x, y);
@@ -272,7 +361,7 @@ public class GridManager : MonoBehaviour
         {
             targetPosition = GridToWorldPosition(-1, rocketGridPos.y);
         }
-        else // Vertical
+        else
         {
             targetPosition = GridToWorldPosition(rocketGridPos.x, Height);
         }
@@ -280,25 +369,27 @@ public class GridManager : MonoBehaviour
         yield return StartCoroutine(rocket.AnimateTravel(targetPosition));
 
         List<GridCell> cellsToDestroy = new List<GridCell>();
-
         if (rocket.direction == RocketController.RocketDirection.Horizontal)
         {
-            for (int x = 0; x < Width; x++)
+            for (int ix = 0; ix < Width; ix++)
             {
-                cellsToDestroy.Add(GetCell(x, rocketGridPos.y));
+                cellsToDestroy.Add(GetCell(ix, rocketGridPos.y));
             }
         }
-        else // Vertical
+        else
         {
-            for (int y = 0; y < Height; y++)
+            for (int iy = 0; iy < Height; iy++)
             {
-                cellsToDestroy.Add(GetCell(rocketGridPos.x, y));
+                cellsToDestroy.Add(GetCell(rocketGridPos.x, iy));
             }
         }
 
         foreach (var cell in cellsToDestroy)
         {
-            if (cell != null && cell.hasCube)
+            if (cell == null)
+                continue;
+
+            if (cell.hasCube)
             {
                 GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
                 GameManager.Instance.effectsManager.PlayExplosionEffect(
@@ -308,7 +399,7 @@ public class GridManager : MonoBehaviour
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
             }
-            if (cell != null && cell.hasRocket)
+            if (cell.hasRocket)
             {
                 GameManager.Instance.effectsManager.PlayExplosionEffect(
                     cell.rocket.transform.position
@@ -323,10 +414,80 @@ public class GridManager : MonoBehaviour
 
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
-        UpdateAllCubePositions();
+        CheckAndCollectBottomRowDucks();
+
+        UpdateAllObjectPositions();
 
         isProcessingMatches = false;
-        Debug.Log("Rocket activation processing complete.");
+    }
+
+    void SpawnInitialBalloons()
+    {
+        int balloonsToPlace = config.balloonsInLevel;
+        if (balloonsToPlace <= 0)
+            return;
+
+        List<Vector2Int> availableCells = new List<Vector2Int>();
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = Height / 2; y < Height; y++)
+            {
+                if (grid[x, y].isEmpty || grid[x, y].hasCube)
+                {
+                    availableCells.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        for (int i = 0; i < balloonsToPlace; i++)
+        {
+            if (availableCells.Count == 0)
+                break;
+
+            int randomIndex = Random.Range(0, availableCells.Count);
+            Vector2Int cellPos = availableCells[randomIndex];
+            availableCells.RemoveAt(randomIndex);
+
+            if (grid[cellPos.x, cellPos.y].hasCube)
+            {
+                Destroy(grid[cellPos.x, cellPos.y].cube.gameObject);
+                grid[cellPos.x, cellPos.y].ClearCube();
+            }
+            CreateBalloon(cellPos.x, cellPos.y);
+        }
+    }
+
+    private void CheckAndCollectBottomRowDucks()
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            GridCell cell = grid[x, 0]; // Bottom row is y = 0
+            if (cell != null && cell.hasDuck && cell.duck != null)
+            {
+                // Collect the duck immediately
+                DuckController duck = cell.duck;
+                cell.ClearDuck(); // Clear from grid first to prevent double collection
+                duck.CollectDuck();
+            }
+        }
+    }
+
+    void CreateBalloon(int x, int y)
+    {
+        if (balloonPrefab == null)
+            return;
+
+        GameObject balloonObj = Instantiate(balloonPrefab, gridParent);
+        balloonObj.SetActive(true);
+
+        SpriteRenderer sr = balloonObj.GetComponent<SpriteRenderer>();
+        if (sr != null)
+            sr.sortingOrder = y;
+
+        BalloonController balloon = balloonObj.GetComponent<BalloonController>();
+        balloon.Initialize(new Vector2Int(x, y));
+        balloon.transform.position = GridToWorldPosition(x, y);
+        grid[x, y].SetBalloon(balloon);
     }
 
     IEnumerator ProcessMatches(List<GridCell> matches, Vector2Int clickPosition)
@@ -339,12 +500,36 @@ public class GridManager : MonoBehaviour
         bool shouldCreateRocket = matches.Count >= config.rocketTriggerSize;
         Vector3 rocketWorldPosition = GridToWorldPosition(clickPosition.x, clickPosition.y);
 
+        List<GridCell> adjacentBalloons = new List<GridCell>();
+
+        foreach (var matchCell in matches)
+        {
+            Vector2Int[] adjacentPositions =
+            {
+                new Vector2Int(matchCell.position.x + 1, matchCell.position.y),
+                new Vector2Int(matchCell.position.x - 1, matchCell.position.y),
+                new Vector2Int(matchCell.position.x, matchCell.position.y + 1),
+                new Vector2Int(matchCell.position.x, matchCell.position.y - 1)
+            };
+
+            foreach (var pos in adjacentPositions)
+            {
+                GridCell adjacentCell = GetCell(pos.x, pos.y);
+                if (
+                    adjacentCell != null
+                    && adjacentCell.hasBalloon
+                    && !adjacentBalloons.Contains(adjacentCell)
+                )
+                {
+                    adjacentBalloons.Add(adjacentCell);
+                }
+            }
+        }
         foreach (var cell in matches)
         {
             if (cell.cube != null)
             {
                 Vector3 explosionPosition = cell.cube.transform.position;
-
                 if (!float.IsNaN(explosionPosition.x) && !float.IsNaN(explosionPosition.y))
                 {
                     GameManager.Instance.effectsManager.PlayExplosionEffect(
@@ -352,9 +537,17 @@ public class GridManager : MonoBehaviour
                         cell.cube.ColorIndex
                     );
                 }
-
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
+            }
+        }
+
+        foreach (var balloonCell in adjacentBalloons)
+        {
+            if (balloonCell.balloon != null)
+            {
+                balloonCell.balloon.Explode();
+                balloonCell.ClearBalloon();
             }
         }
 
@@ -368,7 +561,10 @@ public class GridManager : MonoBehaviour
 
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
-        UpdateAllCubePositions();
+
+        CheckAndCollectBottomRowDucks();
+
+        UpdateAllObjectPositions();
 
         isProcessingMatches = false;
     }
@@ -385,14 +581,13 @@ public class GridManager : MonoBehaviour
 
         SpriteRenderer sr = rocketObj.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        sr.sortingOrder = 6; // Above cubes
+        sr.sortingOrder = 6;
 
         BoxCollider2D col = rocketObj.AddComponent<BoxCollider2D>();
         col.size = Vector2.one;
 
         RocketController rocket = rocketObj.AddComponent<RocketController>();
         rocket.Initialize(direction, gridPosition);
-
         rocketObj.transform.position = worldPosition;
 
         GridCell cell = GetCell(gridPosition.x, gridPosition.y);
@@ -400,81 +595,120 @@ public class GridManager : MonoBehaviour
         {
             cell.SetRocket(rocket);
         }
-
-        Debug.Log($"Created {direction} rocket at grid {gridPosition}, world {worldPosition}");
     }
 
-    void UpdateAllCubePositions()
+    void UpdateAllObjectPositions()
     {
         for (int x = 0; x < Width; x++)
         {
             for (int y = 0; y < Height; y++)
             {
                 GridCell cell = grid[x, y];
+                Vector3 correctPosition = GridToWorldPosition(x, y);
 
                 if (cell.hasCube && cell.cube != null)
                 {
                     cell.cube.SetGridPosition(new Vector2Int(x, y));
-                    Vector3 correctPosition = GridToWorldPosition(x, y);
                     cell.cube.transform.position = correctPosition;
                 }
 
+                if (cell.hasBalloon && cell.balloon != null)
+                {
+                    cell.balloon.SetGridPosition(new Vector2Int(x, y));
+                    cell.balloon.transform.position = correctPosition;
+                }
                 if (cell.hasRocket && cell.rocket != null)
                 {
                     cell.rocket.SetGridPosition(new Vector2Int(x, y));
-                    Vector3 correctPosition = GridToWorldPosition(x, y);
                     cell.rocket.transform.position = correctPosition;
+                }
+
+                if (cell.hasDuck && cell.duck != null)
+                {
+                    cell.duck.SetGridPosition(new Vector2Int(x, y));
+                    cell.duck.transform.position = correctPosition;
                 }
             }
         }
-        Debug.Log("Updated all cube and rocket positions");
     }
 
     IEnumerator ApplyGravity()
     {
-        bool cubesMoved = true;
-        while (cubesMoved)
+        bool itemsMoved = true;
+        while (itemsMoved)
         {
-            cubesMoved = false;
+            itemsMoved = false;
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height - 1; y++)
                 {
                     GridCell currentCell = grid[x, y];
-                    if (!currentCell.isEmpty || currentCell.hasRocket)
+
+                    if (!currentCell.isEmpty)
                         continue;
 
                     for (int yAbove = y + 1; yAbove < Height; yAbove++)
                     {
                         GridCell aboveCell = grid[x, yAbove];
+
+                        if (aboveCell.hasDuck)
+                        {
+                            DuckController duckToMove = aboveCell.duck;
+                            currentCell.SetDuck(duckToMove);
+                            aboveCell.ClearDuck();
+
+                            SpriteRenderer sr = duckToMove.GetComponent<SpriteRenderer>();
+                            if (sr != null)
+                                sr.sortingOrder = y;
+
+                            StartCoroutine(
+                                AnimateObjectFall(duckToMove.transform, GridToWorldPosition(x, y))
+                            );
+                            itemsMoved = true;
+
+                            break;
+                        }
+
+                        if (aboveCell.hasBalloon)
+                        {
+                            BalloonController balloonToMove = aboveCell.balloon;
+                            currentCell.SetBalloon(balloonToMove);
+                            aboveCell.ClearBalloon();
+
+                            SpriteRenderer sr = balloonToMove.GetComponent<SpriteRenderer>();
+                            if (sr != null)
+                                sr.sortingOrder = y;
+
+                            StartCoroutine(
+                                AnimateObjectFall(
+                                    balloonToMove.transform,
+                                    GridToWorldPosition(x, y)
+                                )
+                            );
+                            itemsMoved = true;
+                            break;
+                        }
+
                         if (aboveCell.hasCube)
                         {
-                            currentCell.SetCube(aboveCell.cube);
+                            CubeController cubeToMove = aboveCell.cube;
+                            currentCell.SetCube(cubeToMove);
                             aboveCell.ClearCube();
 
-                            if (currentCell.cube != null)
-                            {
-                                // --- SORTING LOGIC ---
-                                // When a cube falls to a new, lower row, its render
-                                // order must be updated to match its new 'y' position.
-                                SpriteRenderer sr = currentCell.cube.GetComponent<SpriteRenderer>();
-                                if (sr != null)
-                                {
-                                    sr.sortingOrder = y;
-                                }
-                                // --- END OF LOGIC ---
+                            SpriteRenderer sr = cubeToMove.GetComponent<SpriteRenderer>();
+                            if (sr != null)
+                                sr.sortingOrder = y;
 
-                                StartCoroutine(
-                                    AnimateCubeFall(currentCell.cube, GridToWorldPosition(x, y))
-                                );
-                            }
-                            cubesMoved = true;
+                            StartCoroutine(
+                                AnimateObjectFall(cubeToMove.transform, GridToWorldPosition(x, y))
+                            );
+                            itemsMoved = true;
                             break;
                         }
                     }
                 }
             }
-            if (cubesMoved)
+            if (itemsMoved)
             {
                 yield return new WaitForSeconds(0.1f);
             }
@@ -488,6 +722,7 @@ public class GridManager : MonoBehaviour
             for (int y = Height - 1; y >= 0; y--)
             {
                 GridCell cell = grid[x, y];
+
                 if (cell.isEmpty)
                 {
                     CreateRandomCube(x, y);
@@ -497,34 +732,33 @@ public class GridManager : MonoBehaviour
                         Vector3 startPos = GridToWorldPosition(x, Height);
                         Vector3 endPos = GridToWorldPosition(x, y);
                         cell.cube.transform.position = startPos;
-                        StartCoroutine(AnimateCubeFall(cell.cube, endPos));
+                        StartCoroutine(AnimateObjectFall(cell.cube.transform, endPos));
                     }
                 }
             }
         }
-
         yield return new WaitForSeconds(config.cubeFallSpeed / 5f);
     }
 
-    IEnumerator AnimateCubeFall(CubeController cube, Vector3 targetPosition)
+    IEnumerator AnimateObjectFall(Transform objTransform, Vector3 targetPosition)
     {
-        if (cube == null)
+        if (objTransform == null)
             yield break;
 
-        Vector3 startPosition = cube.transform.position;
+        Vector3 startPosition = objTransform.position;
         float journey = 0f;
         float speed = config.cubeFallSpeed;
 
-        while (journey <= 1f && cube != null)
+        while (journey <= 1f && objTransform != null)
         {
             journey += Time.deltaTime * speed;
-            cube.transform.position = Vector3.Lerp(startPosition, targetPosition, journey);
+            objTransform.position = Vector3.Lerp(startPosition, targetPosition, journey);
             yield return null;
         }
 
-        if (cube != null)
+        if (objTransform != null)
         {
-            cube.transform.position = targetPosition;
+            objTransform.position = targetPosition;
         }
     }
 }

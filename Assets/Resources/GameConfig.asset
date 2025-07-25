@@ -19,30 +19,26 @@ MonoBehaviour:
   movesPerLevel: 20
   minMatchSize: 2
   rocketTriggerSize: 5
+  ducksInLevel: 0
+  balloonsInLevel: 0
   cubeSprites:
-  - {fileID: 21300000, guid: 6e2595556b9e86a478a6b1b860ea3a1d, type: 3}
-  - {fileID: 21300000, guid: 001c31012e21c2d43988c76c27afdcc2, type: 3}
-  - {fileID: 21300000, guid: 518bb173b9ce6aa4c9cdda8dcf1f078b, type: 3}
-  - {fileID: 21300000, guid: 7159e51c15557094cb706b71199850fc, type: 3}
-  - {fileID: 21300000, guid: 22b1887bab165da41957b29b66eba884, type: 3}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   balloonSprite: {fileID: 21300000, guid: 720393fe72b61d04390cb6d5f3975662, type: 3}
   duckSprite: {fileID: 21300000, guid: 579e8ac9341cd294daaacfc459ff6337, type: 3}
-  rocketHorizontalSprite: {fileID: 21300000, guid: 5b544ffe0fcc2f44fbf3f30db9296fb3, type: 3}
-  rocketVerticalSprite: {fileID: 21300000, guid: 658b125a97d66ed41babd0c5dd5c91bf, type: 3}
-  backgroundSprite: {fileID: 21300000, guid: 23c43a5e488c05d46aef09da26a9d559, type: 3}
-  topUISprite: {fileID: 21300000, guid: 3fb55e46522c9c1489f2bb1fee1ff57b, type: 3}
-  bottomUISprite: {fileID: 21300000, guid: 27ee411359f708f468c768477a201756, type: 3}
-  bordersSprite: {fileID: 21300000, guid: b1a2aa5cac6165041a37e0e51fca9bd9, type: 3}
+  rocketHorizontalSprite: {fileID: 0}
+  rocketVerticalSprite: {fileID: 0}
+  backgroundSprite: {fileID: 0}
+  topUISprite: {fileID: 0}
+  bottomUISprite: {fileID: 0}
+  bordersSprite: {fileID: 0}
   particleSprites:
-  - {fileID: 21300000, guid: c8393b89f3d5d1f40b7718d933c4005a, type: 3}
-  - {fileID: 21300000, guid: 41993b93e0cd672429949c831fc4464e, type: 3}
-  levelGoals:
-  - colorIndex: 0
-    targetAmount: 15
-    currentAmount: 0
-  - colorIndex: 1
-    targetAmount: 15
-    currentAmount: 0
+  - {fileID: 0}
+  - {fileID: 0}
+  levelGoals: []
   cubeFallSpeed: 5
   explosionDuration: 0.5
   rocketMoveSpeed: 10

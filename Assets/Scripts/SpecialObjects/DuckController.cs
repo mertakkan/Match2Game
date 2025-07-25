@@ -4,6 +4,7 @@ public class DuckController : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
     private GridManager gridManager;
+    private bool isCollected = false;
     public Vector2Int GridPosition { get; private set; }
 
     void Awake()
@@ -17,30 +18,34 @@ public class DuckController : MonoBehaviour
         GridPosition = gridPos;
         spriteRenderer.sprite = GameManager.Instance.gameConfig.duckSprite;
         transform.position = gridManager.GridToWorldPosition(gridPos.x, gridPos.y);
+        gameObject.name = $"Duck_{gridPos.x}_{gridPos.y}";
+        isCollected = false;
     }
 
-    public void CheckIfAtBottom()
+    public void CollectDuck()
     {
-        if (GridPosition.y == 0) // Bottom row
+        if (isCollected || this == null || gameObject == null)
+            return;
+
+        isCollected = true;
+
+        GameManager.Instance.audioManager.PlayDuckSound();
+        GameManager.Instance.CollectDuck();
+        GameManager.Instance.effectsManager.PlayExplosionEffect(transform.position);
+
+        if (Application.isPlaying)
         {
-            CollectDuck();
+            Destroy(gameObject);
+        }
+        else
+        {
+            DestroyImmediate(gameObject);
         }
     }
 
-    void CollectDuck()
-    {
-        // Play duck sound and collection effects
-        GameManager.Instance.audioManager.PlayDuckSound();
-
-        // Collect for goals if applicable
-        // GameManager.Instance.CollectDuck();
-
-        Destroy(gameObject);
-    }
-
-    public void UpdateGridPosition(Vector2Int newPos)
+    public void SetGridPosition(Vector2Int newPos)
     {
         GridPosition = newPos;
-        CheckIfAtBottom();
+        gameObject.name = $"Duck_{newPos.x}_{newPos.y}";
     }
 }

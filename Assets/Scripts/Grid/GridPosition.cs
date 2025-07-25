@@ -37,15 +37,14 @@ public struct GridPosition
         return x.GetHashCode() ^ y.GetHashCode();
     }
 
-    // Get adjacent positions (up, down, left, right)
     public GridPosition[] GetAdjacent()
     {
         return new GridPosition[]
         {
-            new GridPosition(x, y + 1), // Up
-            new GridPosition(x, y - 1), // Down
-            new GridPosition(x - 1, y), // Left
-            new GridPosition(x + 1, y) // Right
+            new GridPosition(x, y + 1),
+            new GridPosition(x, y - 1),
+            new GridPosition(x - 1, y),
+            new GridPosition(x + 1, y)
         };
     }
 }

@@ -3,35 +3,35 @@ using UnityEngine;
 public class BalloonController : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
-    private GridManager gridManager;
     public Vector2Int GridPosition { get; private set; }
 
     void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        gridManager = FindObjectOfType<GridManager>();
     }
 
     public void Initialize(Vector2Int gridPos)
     {
         GridPosition = gridPos;
-        spriteRenderer.sprite = GameManager.Instance.gameConfig.balloonSprite;
-        transform.position = gridManager.GridToWorldPosition(gridPos.x, gridPos.y);
+        if (GameManager.Instance != null && GameManager.Instance.gameConfig != null)
+        {
+            spriteRenderer.sprite = GameManager.Instance.gameConfig.balloonSprite;
+        }
+        gameObject.name = $"Balloon_{gridPos.x}_{gridPos.y}";
     }
 
-    public void ExplodeBalloon()
+    public void SetGridPosition(Vector2Int newPos)
     {
-        // Play balloon sound and effects
+        GridPosition = newPos;
+        gameObject.name = $"Balloon_{newPos.x}_{newPos.y}";
+    }
+
+    public void Explode()
+    {
+        GameManager.Instance.CollectBalloon();
+
         GameManager.Instance.audioManager.PlayBalloonSound();
         GameManager.Instance.effectsManager.PlayExplosionEffect(transform.position);
-
-        // Remove from grid if needed
-        GridCell cell = gridManager.GetCell(GridPosition.x, GridPosition.y);
-        if (cell != null)
-        {
-            // If balloon counts as goal, collect it
-            // GameManager.Instance.CollectBalloon();
-        }
 
         Destroy(gameObject);
     }

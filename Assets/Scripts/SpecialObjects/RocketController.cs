@@ -32,7 +32,6 @@ public class RocketController : MonoBehaviour
         direction = dir;
         GridPosition = gridPos;
 
-        // Set appropriate sprite
         if (direction == RocketDirection.Horizontal)
         {
             spriteRenderer.sprite = config.rocketHorizontalSprite;
@@ -42,12 +41,10 @@ public class RocketController : MonoBehaviour
             spriteRenderer.sprite = config.rocketVerticalSprite;
         }
 
-        // Set proper sorting and rendering
         spriteRenderer.sortingLayerName = "Default";
-        spriteRenderer.sortingOrder = 6; // Above cubes
+        spriteRenderer.sortingOrder = 6;
         spriteRenderer.color = Color.white;
 
-        // Ensure collider is properly set up
         if (rocketCollider != null)
         {
             rocketCollider.enabled = true;
@@ -75,19 +72,12 @@ public class RocketController : MonoBehaviour
 
         if (gridManager != null)
         {
-            // Delegate click handling to the central GridManager
             gridManager.HandleCubeClick(GridPosition.x, GridPosition.y);
         }
     }
 
-    /// <summary>
-    /// Animates the rocket's travel to a target position and then destroys it.
-    /// </summary>
-    /// <param name="targetPosition">The world position to travel to.</param>
-    /// <returns>IEnumerator for the coroutine.</returns>
     public IEnumerator AnimateTravel(Vector3 targetPosition)
     {
-        // Disable the collider to prevent clicking it again while it's moving
         if (rocketCollider != null)
         {
             rocketCollider.enabled = false;
@@ -96,7 +86,6 @@ public class RocketController : MonoBehaviour
         Vector3 startPosition = transform.position;
         float distance = Vector3.Distance(startPosition, targetPosition);
 
-        // Ensure rocketMoveSpeed is not zero to avoid division by zero errors
         if (config.rocketMoveSpeed <= 0)
         {
             Debug.LogWarning("Rocket move speed is zero or less. Snapping to target.");
@@ -110,18 +99,15 @@ public class RocketController : MonoBehaviour
 
         while (elapsed < duration)
         {
-            // Move the rocket smoothly over time
             transform.position = Vector3.Lerp(startPosition, targetPosition, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        // Ensure it ends exactly at the target and then destroy it
         transform.position = targetPosition;
         Destroy(gameObject);
     }
 
-    // Visual feedback on hover
     void OnMouseEnter()
     {
         if (spriteRenderer != null)

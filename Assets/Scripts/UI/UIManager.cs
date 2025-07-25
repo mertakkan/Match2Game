@@ -67,7 +67,7 @@ public class UIManager : MonoBehaviour
             goalsRect.anchorMin = new Vector2(0.5f, 1);
             goalsRect.anchorMax = new Vector2(0.5f, 1);
             goalsRect.pivot = new Vector2(0.5f, 1);
-            goalsRect.anchoredPosition = new Vector2(25, -55);
+            goalsRect.anchoredPosition = new Vector2(50, -55);
             goalsRect.sizeDelta = new Vector2(350, 120);
         }
 
@@ -84,37 +84,79 @@ public class UIManager : MonoBehaviour
         }
 
         layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-        layoutGroup.spacing = 15;
+        layoutGroup.spacing = 25;
         layoutGroup.padding = new RectOffset(10, 10, 10, 10);
         layoutGroup.childControlWidth = false;
         layoutGroup.childControlHeight = false;
+
+        if (config.levelGoals == null)
+            return;
 
         foreach (var goal in config.levelGoals)
         {
             GameObject goalItemObj = CreateGoalItem(goal);
             goalUIItems.Add(goalItemObj.GetComponent<GoalUIItem>());
         }
+
+        int goalCount = config.levelGoals.Length;
+        if (goalCount > 3)
+        {
+            float containerWidth = goalsRect.sizeDelta.x;
+            float horizontalPadding = layoutGroup.padding.left + layoutGroup.padding.right;
+            float totalSpacing = layoutGroup.spacing * (goalCount - 1);
+            float availableWidth = containerWidth - horizontalPadding - totalSpacing;
+            float newSize = 75f;
+
+            float maxAllowedSize =
+                goalsRect.sizeDelta.y - (layoutGroup.padding.top + layoutGroup.padding.bottom);
+            newSize = Mathf.Min(newSize, maxAllowedSize);
+
+            foreach (var goalItem in goalUIItems)
+            {
+                RectTransform itemRect = goalItem.GetComponent<RectTransform>();
+                if (itemRect != null)
+                {
+                    itemRect.sizeDelta = new Vector2(newSize, newSize);
+                }
+            }
+        }
     }
 
-    // REWORKED: This function now positions the text to the bottom-right.
     GameObject CreateGoalItem(LevelGoal goal)
     {
-        GameObject goalItem = new GameObject($"GoalItem_{goal.colorIndex}");
+        GameObject goalItem = new GameObject($"GoalItem_{goal.goalType}");
         goalItem.transform.SetParent(goalsContainer, false);
         goalItem.AddComponent<RectTransform>().sizeDelta = new Vector2(110, 110);
 
         GameObject iconObj = new GameObject("Icon");
         iconObj.transform.SetParent(goalItem.transform, false);
         Image iconImage = iconObj.AddComponent<Image>();
-        iconImage.sprite = config.cubeSprites[goal.colorIndex];
-        iconImage.rectTransform.sizeDelta = new Vector2(110, 110); // Make icon fill the space
+
+        Sprite goalSprite = null;
+        switch (goal.goalType)
+        {
+            case GoalType.Cube:
+                if (goal.colorIndex < config.cubeSprites.Length)
+                {
+                    goalSprite = config.cubeSprites[goal.colorIndex];
+                }
+                break;
+            case GoalType.Duck:
+                goalSprite = config.duckSprite;
+                break;
+            case GoalType.Balloon:
+                goalSprite = config.balloonSprite;
+                break;
+        }
+        iconImage.sprite = goalSprite;
+
+        iconImage.rectTransform.sizeDelta = new Vector2(110, 110);
         iconImage.rectTransform.anchoredPosition = Vector2.zero;
 
         GameObject textObj = new GameObject("Text (TMP)");
         textObj.transform.SetParent(goalItem.transform, false);
         TextMeshProUGUI tmpText = textObj.AddComponent<TextMeshProUGUI>();
 
-        // Set the initial text to be the total target amount
         tmpText.text = goal.targetAmount.ToString();
         tmpText.fontSize = 52;
         tmpText.color = new Color32(0, 0, 0, 255);
@@ -122,29 +164,19 @@ public class UIManager : MonoBehaviour
         tmpText.outlineWidth = 0.2f;
         tmpText.outlineColor = new Color32(255, 243, 224, 255);
 
-        // --- POSITIONING & ALIGNMENT CHANGES ---
         RectTransform textRect = textObj.GetComponent<RectTransform>();
-
-        // Anchor and pivot to the bottom-right of the parent (the icon)
         textRect.anchorMin = new Vector2(1, 0);
         textRect.anchorMax = new Vector2(1, 0);
         textRect.pivot = new Vector2(1, 0);
-
-        // Set the size of the text box
         textRect.sizeDelta = new Vector2(80, 50);
-
-        // Position with padding from the corner
         textRect.anchoredPosition = new Vector2(-5, 5);
-
-        // Align the text itself to the center of its own box for a clean look
         tmpText.alignment = TextAlignmentOptions.Center;
-
-        // --- END OF CHANGES ---
 
         GoalUIItem goalUIComponent = goalItem.AddComponent<GoalUIItem>();
         goalUIComponent.goalIcon = iconImage;
         goalUIComponent.goalTextTMP = tmpText;
-        goalUIComponent.Initialize(goal, config.cubeSprites[goal.colorIndex]);
+
+        goalUIComponent.Initialize(goal, goalSprite);
 
         return goalItem;
     }

@@ -20,10 +20,6 @@ public class CubeController : MonoBehaviour
         spriteRenderer.sprite = cubeSprite;
 
         spriteRenderer.sortingLayerName = "Default";
-        // MODIFICATION: Removed the line that set a fixed sorting order.
-        // The sorting order is now exclusively controlled by the GridManager
-        // based on the cube's row (y-position).
-        // spriteRenderer.sortingOrder = 5;
 
         spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
         spriteRenderer.enabled = true;
@@ -33,7 +29,6 @@ public class CubeController : MonoBehaviour
             spriteRenderer.material = new Material(Shader.Find("Sprites/Default"));
         }
 
-        // Ensure collider is enabled and properly sized
         if (cubeCollider != null)
         {
             cubeCollider.enabled = true;
@@ -54,7 +49,6 @@ public class CubeController : MonoBehaviour
 
     void OnMouseDown()
     {
-        // Add debug info
         Debug.Log($"Cube clicked: {gameObject.name} at grid position {GridPosition}");
 
         if (GridPosition.x >= 0 && GridPosition.y >= 0)
@@ -97,10 +91,8 @@ public class CubeController : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // Add this for debugging
     void OnMouseEnter()
     {
-        // Optional: Add visual feedback when hovering
         if (spriteRenderer != null)
         {
             spriteRenderer.color = new Color(1.2f, 1.2f, 1.2f, 1f);
@@ -109,7 +101,6 @@ public class CubeController : MonoBehaviour
 
     void OnMouseExit()
     {
-        // Reset color
         if (spriteRenderer != null)
         {
             spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
