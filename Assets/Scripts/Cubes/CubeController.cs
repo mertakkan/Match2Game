@@ -20,7 +20,11 @@ public class CubeController : MonoBehaviour
         spriteRenderer.sprite = cubeSprite;
 
         spriteRenderer.sortingLayerName = "Default";
-        spriteRenderer.sortingOrder = 5;
+        // MODIFICATION: Removed the line that set a fixed sorting order.
+        // The sorting order is now exclusively controlled by the GridManager
+        // based on the cube's row (y-position).
+        // spriteRenderer.sortingOrder = 5;
+
         spriteRenderer.color = new Color(1f, 1f, 1f, 1f);
         spriteRenderer.enabled = true;
 

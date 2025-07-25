@@ -16,6 +16,10 @@ public class GridManager : MonoBehaviour
     public int Width => config.gridWidth;
     public int Height => config.gridHeight;
 
+    // MODIFICATION: Changed to a value less than 1.0 to create a "stacked" look.
+    // This makes rows overlap vertically.
+    private const float VerticalOverlapFactor = 1f;
+
     void Awake()
     {
         mainCamera = Camera.main;
@@ -32,7 +36,9 @@ public class GridManager : MonoBehaviour
 
         SpriteRenderer sr = cubePrefab.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
-        sr.sortingOrder = 5;
+        // Base sorting order is now determined dynamically.
+        // We set it to a default here, but it will be overridden.
+        sr.sortingOrder = 0;
         sr.color = new Color(1f, 1f, 1f, 1f);
         sr.material = new Material(Shader.Find("Sprites/Default"));
 
@@ -54,7 +60,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // Clear existing grid
         if (gridParent != null)
         {
             foreach (Transform child in gridParent)
@@ -66,9 +71,7 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Reset processing flag
         isProcessingMatches = false;
-
         grid = new GridCell[Width, Height];
 
         for (int x = 0; x < Width; x++)
@@ -86,11 +89,13 @@ public class GridManager : MonoBehaviour
     void SetupCameraAndGrid()
     {
         float totalWidth = Width * config.cellSize + (Width - 1) * config.gridSpacing;
-        float totalHeight = Height * config.cellSize + (Height - 1) * config.gridSpacing;
+        // Use the new overlap factor to calculate the visual height of the grid
+        float verticalStep = config.cellSize * VerticalOverlapFactor;
+        float totalHeight = ((Height - 1) * verticalStep) + config.cellSize;
 
         Vector3 gridOffset = new Vector3(
             -totalWidth * 0.5f + config.cellSize * 0.5f,
-            -totalHeight * 0.5f + config.cellSize * 0.5f + 1f,
+            -totalHeight * 0.5f + config.cellSize * 0.5f,
             0
         );
 
@@ -99,9 +104,9 @@ public class GridManager : MonoBehaviour
             gridParent.position = gridOffset;
         }
 
-        float requiredSize = Mathf.Max(totalHeight * 0.8f, totalWidth * 0.6f / mainCamera.aspect);
+        float requiredSize = Mathf.Max(totalHeight * 0.7f, totalWidth * 0.6f / mainCamera.aspect);
         mainCamera.orthographicSize = requiredSize;
-        mainCamera.transform.position = new Vector3(0, 1f, -10f);
+        mainCamera.transform.position = new Vector3(0, 0, -10f);
     }
 
     void FillInitialGrid()
@@ -134,13 +139,22 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+        // --- SORTING LOGIC ---
+        // Set sorting order based on the row (y). Higher rows get a higher
+        // value, making them render ON TOP of lower rows.
+        SpriteRenderer sr = cubeObj.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingOrder = y;
+        }
+        // --- END OF LOGIC ---
+
         int randomColorIndex = Random.Range(0, config.cubeSprites.Length);
         cube.Initialize(randomColorIndex, config.cubeSprites[randomColorIndex]);
 
         Vector3 worldPos = GridToWorldPosition(x, y);
         cube.transform.position = worldPos;
 
-        // CRITICAL: Set grid position and update grid reference
         cube.SetGridPosition(new Vector2Int(x, y));
         grid[x, y].SetCube(cube);
     }
@@ -148,7 +162,8 @@ public class GridManager : MonoBehaviour
     public Vector3 GridToWorldPosition(int x, int y)
     {
         float worldX = x * (config.cellSize + config.gridSpacing);
-        float worldY = y * (config.cellSize + config.gridSpacing);
+        // Vertical position now uses the overlap factor for a stacked look.
+        float worldY = y * (config.cellSize * VerticalOverlapFactor);
         return gridParent.position + new Vector3(worldX, worldY, 0);
     }
 
@@ -156,7 +171,7 @@ public class GridManager : MonoBehaviour
     {
         Vector3 localPos = worldPos - gridParent.position;
         int x = Mathf.RoundToInt(localPos.x / (config.cellSize + config.gridSpacing));
-        int y = Mathf.RoundToInt(localPos.y / (config.cellSize + config.gridSpacing));
+        int y = Mathf.RoundToInt(localPos.y / (config.cellSize * VerticalOverlapFactor));
         return new Vector2Int(x, y);
     }
 
@@ -250,35 +265,39 @@ public class GridManager : MonoBehaviour
         RocketController rocket = rocketCell.rocket;
         Vector2Int rocketGridPos = rocket.GridPosition;
 
-        // Clear the rocket from the grid model immediately
         rocketCell.ClearRocket();
 
-        List<Vector2Int> destroyPositions = new List<Vector2Int>();
+        Vector3 targetPosition;
+        if (rocket.direction == RocketController.RocketDirection.Horizontal)
+        {
+            targetPosition = GridToWorldPosition(-1, rocketGridPos.y);
+        }
+        else // Vertical
+        {
+            targetPosition = GridToWorldPosition(rocketGridPos.x, Height);
+        }
 
-        // Determine which cubes to destroy based on rocket direction
+        yield return StartCoroutine(rocket.AnimateTravel(targetPosition));
+
+        List<GridCell> cellsToDestroy = new List<GridCell>();
+
         if (rocket.direction == RocketController.RocketDirection.Horizontal)
         {
             for (int x = 0; x < Width; x++)
             {
-                destroyPositions.Add(new Vector2Int(x, rocketGridPos.y));
+                cellsToDestroy.Add(GetCell(x, rocketGridPos.y));
             }
         }
         else // Vertical
         {
             for (int y = 0; y < Height; y++)
             {
-                destroyPositions.Add(new Vector2Int(rocketGridPos.x, y));
+                cellsToDestroy.Add(GetCell(rocketGridPos.x, y));
             }
         }
 
-        // Destroy the rocket GameObject itself
-        GameManager.Instance.effectsManager.PlayExplosionEffect(rocket.transform.position);
-        Destroy(rocket.gameObject);
-
-        // Destroy cubes and collect them
-        foreach (Vector2Int pos in destroyPositions)
+        foreach (var cell in cellsToDestroy)
         {
-            GridCell cell = GetCell(pos.x, pos.y);
             if (cell != null && cell.hasCube)
             {
                 GameManager.Instance.CollectCube(cell.cube.ColorIndex, 1);
@@ -289,16 +308,19 @@ public class GridManager : MonoBehaviour
                 Destroy(cell.cube.gameObject);
                 cell.ClearCube();
             }
+            if (cell != null && cell.hasRocket)
+            {
+                GameManager.Instance.effectsManager.PlayExplosionEffect(
+                    cell.rocket.transform.position
+                );
+                Destroy(cell.rocket.gameObject);
+                cell.ClearRocket();
+            }
         }
 
         GameManager.Instance.audioManager.PlayExplosionSound();
+        yield return new WaitForSeconds(config.explosionDuration);
 
-        // Wait for visual destruction to be perceived
-        yield return new WaitForSeconds(
-            config.explosionDuration > 0.2f ? config.explosionDuration : 0.2f
-        );
-
-        // Now, run the standard grid update sequence
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
         UpdateAllCubePositions();
@@ -315,11 +337,8 @@ public class GridManager : MonoBehaviour
         GameManager.Instance.CollectCube(colorIndex, matches.Count);
 
         bool shouldCreateRocket = matches.Count >= config.rocketTriggerSize;
-
-        // Store rocket position before destroying cubes
         Vector3 rocketWorldPosition = GridToWorldPosition(clickPosition.x, clickPosition.y);
 
-        // Explode cubes with effects
         foreach (var cell in matches)
         {
             if (cell.cube != null)
@@ -340,20 +359,15 @@ public class GridManager : MonoBehaviour
         }
 
         GameManager.Instance.audioManager.PlayExplosionSound();
-
         yield return new WaitForSeconds(config.explosionDuration);
 
-        // Create rocket AFTER clearing the cell but BEFORE gravity
         if (shouldCreateRocket)
         {
             CreateRocket(clickPosition, rocketWorldPosition);
         }
 
-        // Apply gravity and fill grid
         yield return StartCoroutine(ApplyGravity());
         yield return StartCoroutine(FillEmptySpaces());
-
-        // CRITICAL: Update all cube positions after movement
         UpdateAllCubePositions();
 
         isProcessingMatches = false;
@@ -379,10 +393,8 @@ public class GridManager : MonoBehaviour
         RocketController rocket = rocketObj.AddComponent<RocketController>();
         rocket.Initialize(direction, gridPosition);
 
-        // Position rocket at the exact world position
         rocketObj.transform.position = worldPosition;
 
-        // CRITICAL: Place rocket in grid system
         GridCell cell = GetCell(gridPosition.x, gridPosition.y);
         if (cell != null)
         {
@@ -392,7 +404,6 @@ public class GridManager : MonoBehaviour
         Debug.Log($"Created {direction} rocket at grid {gridPosition}, world {worldPosition}");
     }
 
-    // CRITICAL: This method ensures all cubes have correct grid positions
     void UpdateAllCubePositions()
     {
         for (int x = 0; x < Width; x++)
@@ -422,45 +433,47 @@ public class GridManager : MonoBehaviour
     IEnumerator ApplyGravity()
     {
         bool cubesMoved = true;
-
         while (cubesMoved)
         {
             cubesMoved = false;
-
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height - 1; y++)
                 {
                     GridCell currentCell = grid[x, y];
-                    // Skip if cell has a rocket
                     if (!currentCell.isEmpty || currentCell.hasRocket)
                         continue;
 
-                    // Find cube above to fall down
                     for (int yAbove = y + 1; yAbove < Height; yAbove++)
                     {
                         GridCell aboveCell = grid[x, yAbove];
                         if (aboveCell.hasCube)
                         {
-                            // Move cube down
                             currentCell.SetCube(aboveCell.cube);
                             aboveCell.ClearCube();
 
-                            // Animate cube falling
                             if (currentCell.cube != null)
                             {
+                                // --- SORTING LOGIC ---
+                                // When a cube falls to a new, lower row, its render
+                                // order must be updated to match its new 'y' position.
+                                SpriteRenderer sr = currentCell.cube.GetComponent<SpriteRenderer>();
+                                if (sr != null)
+                                {
+                                    sr.sortingOrder = y;
+                                }
+                                // --- END OF LOGIC ---
+
                                 StartCoroutine(
                                     AnimateCubeFall(currentCell.cube, GridToWorldPosition(x, y))
                                 );
                             }
-
                             cubesMoved = true;
                             break;
                         }
                     }
                 }
             }
-
             if (cubesMoved)
             {
                 yield return new WaitForSeconds(0.1f);
@@ -470,18 +483,15 @@ public class GridManager : MonoBehaviour
 
     IEnumerator FillEmptySpaces()
     {
-        // Fill from top to bottom
         for (int x = 0; x < Width; x++)
         {
             for (int y = Height - 1; y >= 0; y--)
             {
                 GridCell cell = grid[x, y];
-                // Only fill if cell is completely empty (no cube AND no rocket)
                 if (cell.isEmpty)
                 {
                     CreateRandomCube(x, y);
 
-                    // Animate new cube falling from above
                     if (cell.hasCube && cell.cube != null)
                     {
                         Vector3 startPos = GridToWorldPosition(x, Height);
