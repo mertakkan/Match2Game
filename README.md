@@ -1,4 +1,4 @@
-# Peak Mobile Case - Match 2 Game
+# Match 2 Game
 
 This repository contains a Match-2 game developed as part of the Peak Mobile Case study. The project was built using **Unity 2021.3.18f1** and the C# programming language.
 
