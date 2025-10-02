@@ -49,4 +49,4 @@ All game and level parameters can be modified through the **GameConfig** asset l
 - **Grid Settings**: Set the grid's width and height.
 - **Gameplay Settings**: Adjust the number of moves per level, the match size required to trigger a rocket, and the number of balloons and ducks in the level.
 - **Level Goals**: Define the level's objectives, such as how many cubes of a certain color, balloons, or ducks need to be collected.
-- **Sprites, AudioClips, etc.**: All visual and audio assets for the game can be assigned here.```
+- **Sprites, AudioClips, etc.**: All visual and audio assets for the game can be assigned here.
